@@ -5,7 +5,7 @@ from sklearn import preprocessing
 # import tensorflow_hub as hub
 from keras.utils import to_categorical
 
-filepath = './CT_Neuro_Train_Data.csv'
+filepath = './CT_Neuro_Gold_Standard.xlsx'
 
 corpus = helpers.readData(filepath=filepath)
 

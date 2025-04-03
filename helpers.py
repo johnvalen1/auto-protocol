@@ -1,12 +1,11 @@
 import pandas as pd
 import class_labels
 
-
 filepath = './CT_Neuro_Train_Data.csv'
 
 def readData(filepath):
     """ This function reads in the .csv file with the indication, protocol, and identifier. """
-    corpus = pd.read_csv(filepath)
+    corpus = pd.read_excel(filepath)
     indication = corpus['indication']
     protocol = corpus['protocol']
     zipped = zip(indication, protocol)
@@ -25,4 +24,3 @@ def DefineLabelVectorization(label_array):
             vectorized_label[class_index] = 1
         vectorized_label_strings.append(vectorized_label)
     return vectorized_label_strings
-
