@@ -19,10 +19,8 @@ import nltk
 def readData(filepath):
     """ This function reads in the .csv file with the indication, protocol, and identifier. """
     corpus = pd.read_excel(filepath)
-    indication = corpus['indication']
-    protocol = corpus['protocol']
-    zipped = zip(indication, protocol)
-    return pd.DataFrame(zipped, columns = ['indication','protocol'])
+    columns_needed = ["Identifier", "indication", "protocol", "which_protocol"]
+    return pd.DataFrame(corpus[columns_needed])
 
 
 # Function to remove punctuation

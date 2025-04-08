@@ -8,15 +8,23 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-
+import class_labels
+import hyperparameters
+import helpers
 
  # the base model is a simple logistic regression
-def LogisticModel(indication, protocol, file_output_path):
-    # create a multi label binarizer to allow the model to assign multiple labels to a single indication
-    mlb = MultiLabelBinarizer()
-    protocol_mulit_label = mlb.fit_transform(protocol)
+def LogisticModel(train_corpus, test_corpus, file_output_path):
 
-    X_train, X_test, y_train, y_test = train_test_split(indication, protocol_mulit_label, test_size=0.2, random_state=42)
+    X_train = train_corpus['indication']
+    y_train = train_corpus['protocol']
+    X_test = test_corpus['indication']
+    y_test = test_corpus['protocol']
+
+    indication = helpers.preprocessIndication(X_train)
+    # create a multi label binarizer to allow the model to assign multiple labels to a single indication
+    # mlb = MultiLabelBinarizer()
+    # protocol_mulit_label = mlb.fit_transform(protocol)
+    # print(protocol_mulit_label.shape)
 
     # Step 1: Convert text data to numerical features using TF-IDF
     vectorizer = TfidfVectorizer(stop_words='english')  # You can adjust this as needed
@@ -31,7 +39,7 @@ def LogisticModel(indication, protocol, file_output_path):
     y_pred = model.predict(X_test_tfidf)
 
     # Step 4: Evaluate the model
-    output_text = "Accuracy: " + str(accuracy_score(y_test, y_pred)) + "\n Classification Report: \n" + str(classification_report(y_test, y_pred))
+    output_text = "Accuracy: " + str(accuracy_score(y_test, y_pred)) + "\n Classification Report: \n" + str(classification_report(y_test, y_pred, target_names=class_labels.labels))
     with open(file_output_path, "w") as file:
         file.write(output_text)
 
