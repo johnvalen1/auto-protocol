@@ -16,6 +16,7 @@ import helpers
 def LogisticModel(train_corpus, test_corpus, file_output_path):
 
     X_train = train_corpus['indication']
+    print(X_train)
     y_train = train_corpus['protocol']
     X_test = test_corpus['indication']
     y_test = test_corpus['protocol']
