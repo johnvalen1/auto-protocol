@@ -4,26 +4,28 @@ from sklearn import preprocessing
 import pandas as pd
 from keras.utils import to_categorical
 import hyperparameters
+import filepaths
 
-filepath = './CT_Neuro_Gold_Standard.xlsx'
-file_output_path = "./model_results.txt"
-corpus = helpers.readData(filepath=filepath)
+gold_standard_file = filepaths.gold_standard
+corpus = helpers.readData(filepath=gold_standard_file)
+preprocessed_corpus = helpers.preprocessTextField(df=corpus, col_name="indication")
+preprocessed_corpus.to_csv(f"{filepaths.logs_filepath}corpus_preprocessed_indication.csv")
+
+model.LogisticModel(corpus=preprocessed_corpus, file_output_path=filepaths.file_output_path)
+
 #shuffle the corpus before splitting it into train/test
-shuffled_corpus = corpus.sample(frac=1, random_state=42).reset_index(drop=True)
-#X_train, X_test, y_train, y_test = train_test_split(indication, protocol_mulit_label, test_size=0.2, random_state=42)
-train_corpus = shuffled_corpus.iloc[:int(len(shuffled_corpus) * hyperparameters.train_size)]
-test_corpus = shuffled_corpus.iloc[int(len(shuffled_corpus) * hyperparameters.train_size):]
+# shuffled_corpus = corpus.sample(frac=1, random_state=42).reset_index(drop=True)
 
-train_corpus.to_csv("./Documentation/train_corpus.csv")
-test_corpus.to_csv("./Documentation/test_corpus.csv")
 # pre-process the indication column using lemmatization, removing stopwords, and removing punctuation
+# train_corpus = shuffled_corpus.iloc[:int(len(shuffled_corpus) * hyperparameters.train_size)]
+# train_corpus.to_csv(f"{filepaths.train_dir}train_corpus_raw.csv")
+# train_corpus = helpers.preprocessTextField(df=train_corpus, col_name="indication")
+# train_corpus.to_csv(f"{filepaths.train_dir}train_corpus_preprocessed_indication.csv")
+
+# test_corpus = shuffled_corpus.iloc[int(len(shuffled_corpus) * hyperparameters.train_size):]
+# test_corpus.to_csv(f"{filepaths.test_dir}test_corpus_raw.csv")
+# test_corpus = helpers.preprocessTextField(df=test_corpus, col_name="indication")
+# test_corpus.to_csv(f"{filepaths.test_dir}test_corpus_preprocessed_indication.csv")
 
 
-model.LogisticModel(train_corpus, test_corpus, file_output_path)
 
-# label = preprocessing.LabelEncoder()
-# # y = label.fit_transform(protocol)
-# # y = to_categorical(y)
-
-# y = helpers.DefineLabelVectorization(protocol)
-# print(y)

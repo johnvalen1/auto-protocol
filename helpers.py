@@ -10,7 +10,8 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 import nltk
-
+import filepaths
+import csv
 # nltk.download('punkt')
 # nltk.download('punkt_tab')
 # nltk.download('stopwords')
@@ -23,28 +24,50 @@ def readData(filepath):
     return pd.DataFrame(corpus[columns_needed])
 
 
-# Function to remove punctuation
-def preprocessIndication(indication_df):
-    def remove_punctuation(text):
-        return ''.join([char for char in text if char not in string.punctuation])
+def preprocessTextField(df, col_name):
+    df = df.copy()
+    def remove_punctuation():
+        df[col_name] = df[col_name].apply(lambda x: ''.join([char for char in x if char not in string.punctuation]))
+        return df
 
     # Function to remove stopwords
-    def remove_stopwords(text):
+    def remove_stopwords():
         stop_words = set(stopwords.words('english'))
-        word_tokens = word_tokenize(text)
-        return ' '.join([word for word in word_tokens if word not in stop_words])
 
-    def lemmatize_text(text):
+        with open(f"{filepaths.logs_filepath}stop_words.csv", "w", newline="") as f:
+            writer = csv.writer(f)
+            for item in stop_words:
+                writer.writerow([item])  # each item goes into a new row
+
+        for ix, indication in df[col_name].items():
+            word_tokens = word_tokenize(indication)
+            filtered = ' '.join([word for word in word_tokens if word.lower() not in stop_words])
+            df.loc[ix, col_name] = filtered
+        return df
+
+    def lemmatize_text():
         # Function to lemmatize text
         lemmatizer = WordNetLemmatizer()
-        word_tokens = word_tokenize(text)
-        return ' '.join([lemmatizer.lemmatize(word) for word in word_tokens])
+        for ix, indication in df[col_name].items():
+            word_tokens = word_tokenize(indication)
+            filtered = ' '.join([lemmatizer.lemmatize(word) for word in word_tokens])
+            df.loc[ix, col_name] = filtered
+        return df
 
-    return pd.Series([
-    remove_punctuation(
-        remove_stopwords(
-            lemmatize_text(str(row_indication))))
-    for row_indication in indication_df])
+    df = remove_punctuation()
+    df = remove_stopwords()
+    df = lemmatize_text()
+    return df
+
+    # return pd.Series([
+    # remove_punctuation(
+    #     remove_stopwords(
+    #         lemmatize_text(str(row_indication))))
+    # for row_indication in indication_df])
+
+
+
+
 
 
 def DefineLabelVectorization(label_array):
