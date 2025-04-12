@@ -14,33 +14,7 @@ import hyperparameters
 import helpers
 import filepaths
 
-# the base model is a simple logistic regression
-# def LogisticModel(train_corpus, test_corpus, file_output_path):
-
-#     X_train = train_corpus['indication']
-#     y_train = train_corpus['protocol']
-
-#     X_test = test_corpus['indication']
-#     y_test = test_corpus['protocol']
-
-#     # create a multi label binarizer to allow the model to assign multiple labels to a single indication
-#     mlb = MultiLabelBinarizer()
-#     y_train = mlb.fit_transform(y_train)
-#     y_test = mlb.fit_transform(y_test)
-#     # Convert text data to numerical features using TF-IDF
-#     vectorizer = TfidfVectorizer(stop_words='english')  # You can adjust this as needed
-#     X_train_tfidf = vectorizer.fit_transform(X_train)
-#     X_test_tfidf = vectorizer.transform(X_test)
-
-#     # Train a classifier (Logistic Regression in this case)
-#     model = OneVsRestClassifier(LogisticRegression(max_iter=1000))
-#     model.fit(X_train_tfidf, y_train)
-
-#     # Make predictions
-#     Y_pred = model.predict(X_test_tfidf)
-#     # (preferred for ranking): get prediction probabilities.
-#     probs = model.predict_proba(X_test_tfidf)
-
+# the base model is a simple logistic regression, which we expand to allow for multi-label outputs
 def LogisticModel(corpus, file_output_path):
     # Convert protocol strings to lists
     df = corpus.copy()
@@ -66,21 +40,26 @@ def LogisticModel(corpus, file_output_path):
         X, Y, df, test_size=0.1, random_state=42)
 
     df_train.to_csv(f"{filepaths.train_dir}df_train.csv")
+
     # Set up the OneVsRestClassifier with LogisticRegression
     clf = OneVsRestClassifier(LogisticRegression(max_iter=1000))
     clf.fit(X_train, Y_train)
 
-    # Predict the labels for the test set
-    Y_pred = clf.predict(X_test)
+    # Define a function that checks for a positive, non-zero probability and returns a string of all such labels.
+    def get_labels_with_positive_prob(probabilities, classes):
+        # Get all labels where the probability is greater than zero
+        positive_labels = [label for label, prob in zip(classes, probabilities) if prob > hyperparameters.prob_cutoff]
+        # Concatenate them into a comma-separated string
+        return ", ".join(positive_labels)
 
-    # Convert the binary prediction array back into label names
-    predicted_labels = mlb.inverse_transform(Y_pred)
+    # Obtain prediction probabilities for the test set
+    probs = clf.predict_proba(X_test)
 
-    # Optionally convert each tuple of predicted labels to a comma separated string:
-    predicted_labels_str = [", ".join(labels) if labels else "" for labels in predicted_labels]
+    # For each test instance, get the concatenated string of predicted labels with non-zero probability
+    predicted_labels_str = [get_labels_with_positive_prob(prob, mlb.classes_) for prob in probs]
 
-    # Add the predicted labels as a new column in the test dataframe for comparison
-    df_test = df_test.reset_index(drop=True)   # Reset index for a clean join (optional)
+    # Add these predicted labels as a new column in the test dataframe
+    df_test = df_test.reset_index(drop=True)
     df_test['predicted_protocol'] = predicted_labels_str
 
     df_test.to_csv(f"{filepaths.test_dir}df_test_with_predictions.csv")
