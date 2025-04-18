@@ -26,6 +26,3 @@ model.LogisticModel(corpus=preprocessed_corpus, file_output_path=filepaths.file_
 # test_corpus.to_csv(f"{filepaths.test_dir}test_corpus_raw.csv")
 # test_corpus = helpers.preprocessTextField(df=test_corpus, col_name="indication")
 # test_corpus.to_csv(f"{filepaths.test_dir}test_corpus_preprocessed_indication.csv")
-
-
-

@@ -13,7 +13,7 @@ import class_labels
 import hyperparameters
 import helpers
 import filepaths
-
+import re
 # the base model is a simple logistic regression, which we expand to allow for multi-label outputs
 def LogisticModel(corpus, file_output_path):
     # Convert protocol strings to lists
@@ -36,8 +36,7 @@ def LogisticModel(corpus, file_output_path):
     X = vectorizer.fit_transform(df['indication'])
 
     # Split the data ensuring that you keep track of the corresponding rows in the original dataframe.
-    X_train, X_test, Y_train, Y_test, df_train, df_test = train_test_split(
-        X, Y, df, test_size=0.1, random_state=42)
+    X_train, X_test, Y_train, Y_test, df_train, df_test = train_test_split(X, Y, df, test_size=0.1, random_state=42)
 
     df_train.to_csv(f"{filepaths.train_dir}df_train.csv")
 
@@ -61,5 +60,14 @@ def LogisticModel(corpus, file_output_path):
     # Add these predicted labels as a new column in the test dataframe
     df_test = df_test.reset_index(drop=True)
     df_test['predicted_protocol'] = predicted_labels_str
+    # remove characters added to the protocol column - characters like [ ] and '
+    df_test['protocol'] = df_test['protocol'].apply(lambda x: re.sub('\'|\[|\]', '', str(x)))
 
+    #[re.sub('\'|\[|\]', '', protocol) for protocol in df_test['protocol']]
     df_test.to_csv(f"{filepaths.test_dir}df_test_with_predictions.csv")
+
+    # calculate model predictive accuracy
+    import model_metrics
+    print(model_metrics.model_accuracy(df_test, true_label_column="protocol", prediction_column="predicted_protocol"))
+
+
