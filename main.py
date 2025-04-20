@@ -9,7 +9,7 @@ import filepaths
 gold_standard_file = filepaths.gold_standard
 gold_standard_CT_neuro = helpers.readData(filepath=gold_standard_file)
 preprocessed_gold_standard_CT_neuro = helpers.preprocessTextField(df=gold_standard_CT_neuro, col_name="indication")
-preprocessed_gold_standard_CT_neuro.to_csv(f"{filepaths.logs_filepath}corpus_preprocessed_indication.csv")
+preprocessed_gold_standard_CT_neuro.to_csv(f"{filepaths.logs_filepath}gold_standard_preprocessed_indication.csv")
 
 model.LogisticModel(corpus=preprocessed_gold_standard_CT_neuro, file_output_path=filepaths.file_output_path)
 

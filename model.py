@@ -37,7 +37,8 @@ def LogisticModel(corpus, file_output_path):
 
     # Split the data ensuring that you keep track of the corresponding rows in the original dataframe.
     X_train, X_test, Y_train, Y_test, df_train, df_test = train_test_split(X, Y, df, test_size=0.1, random_state=42)
-
+    # remove characters added to the protocol column - characters like [ ] and '
+    df_train['protocol'] = df_train['protocol'].apply(lambda x: re.sub('\'|\[|\]', '', str(x)))
     df_train.to_csv(f"{filepaths.train_dir}df_train.csv")
 
     # Set up the OneVsRestClassifier with LogisticRegression

@@ -18,10 +18,9 @@ import csv
 # nltk.download('wordnet')
 
 def readData(filepath):
-    """ This function reads in the .csv file with the indication, protocol, and identifier. """
-    corpus = pd.read_excel(filepath)
+    df = pd.read_excel(filepath)
     columns_needed = ["Identifier", "indication", "protocol", "which_protocol"]
-    return pd.DataFrame(corpus[columns_needed])
+    return pd.DataFrame(df[columns_needed])
 
 
 def preprocessTextField(df, col_name):
