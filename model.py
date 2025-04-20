@@ -34,8 +34,6 @@ def LogisticModel(dataset, file_output_path):
     mlb = MultiLabelBinarizer(classes=unique_protocols)
     Y = mlb.fit_transform(df['protocol'])
 
-    """ NEW """
-    # 3) Split (keeping the raw df rows for later inspection)
     X_train, X_test, Y_train, Y_test, df_train, df_test = train_test_split(
         df[["indication", "patient_sex", "patient_age"]], Y, df, test_size=hyperparameters.test_size, random_state=42)
 
@@ -58,23 +56,12 @@ def LogisticModel(dataset, file_output_path):
         ("clf",     OneVsRestClassifier(LogisticRegression(max_iter=1000)))
     ])
 
-    # 6) Train
+    # Train
     pipeline.fit(X_train, Y_train)
 
-    """ OLD """
-    # # Vectorize the free-text 'indication'
-    # vectorizer = TfidfVectorizer(stop_words='english')
-    # X = vectorizer.fit_transform(df['indication'])
-
-    # # Split the data ensuring that you keep track of the corresponding rows in the original dataframe.
-    # X_train, X_test, Y_train, Y_test, df_train, df_test = train_test_split(X, Y, df, test_size=0.1, random_state=42)
     # # remove characters added to the protocol column - characters like [ ] and '
     df_train['protocol'] = df_train['protocol'].apply(lambda x: re.sub('\'|\[|\]', '', str(x)))
     df_train.to_csv(f"{filepaths.train_dir}df_train.csv")
-
-    # # Set up the OneVsRestClassifier with LogisticRegression
-    # clf = OneVsRestClassifier(LogisticRegression(max_iter=1000))
-    # clf.fit(X_train, Y_train)
 
     # Define a function that checks for a positive, non-zero probability and returns a string of all such labels.
     def get_labels_with_positive_prob(probabilities, classes):
