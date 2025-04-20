@@ -19,7 +19,7 @@ import csv
 
 def readData(filepath):
     df = pd.read_excel(filepath)
-    columns_needed = ["Identifier", "indication", "protocol", "which_protocol"]
+    columns_needed = ["Identifier", "indication", "protocol", "which_protocol", "patient_sex", "patient_age"]
     return pd.DataFrame(df[columns_needed])
 
 

@@ -11,7 +11,10 @@ gold_standard_CT_neuro = helpers.readData(filepath=gold_standard_file)
 preprocessed_gold_standard_CT_neuro = helpers.preprocessTextField(df=gold_standard_CT_neuro, col_name="indication")
 preprocessed_gold_standard_CT_neuro.to_csv(f"{filepaths.logs_filepath}gold_standard_preprocessed_indication.csv")
 
-model.LogisticModel(corpus=preprocessed_gold_standard_CT_neuro, file_output_path=filepaths.file_output_path)
+
+
+
+model.LogisticModel(dataset=preprocessed_gold_standard_CT_neuro, file_output_path=filepaths.file_output_path)
 
 #shuffle the corpus before splitting it into train/test
 # shuffled_corpus = corpus.sample(frac=1, random_state=42).reset_index(drop=True)

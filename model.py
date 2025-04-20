@@ -8,6 +8,9 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.preprocessing import MultiLabelBinarizer
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import class_labels
 import hyperparameters
@@ -15,9 +18,9 @@ import helpers
 import filepaths
 import re
 # the base model is a simple logistic regression, which we expand to allow for multi-label outputs
-def LogisticModel(corpus, file_output_path):
+def LogisticModel(dataset, file_output_path):
     # Convert protocol strings to lists
-    df = corpus.copy()
+    df = dataset.copy()
     df['protocol'] = df['protocol'].apply(lambda x: [p.strip() for p in x.split(',')])
 
     # (Optional) Preserve order from raw data:
@@ -31,19 +34,47 @@ def LogisticModel(corpus, file_output_path):
     mlb = MultiLabelBinarizer(classes=unique_protocols)
     Y = mlb.fit_transform(df['protocol'])
 
-    # Vectorize the free-text 'indication'
-    vectorizer = TfidfVectorizer(stop_words='english')
-    X = vectorizer.fit_transform(df['indication'])
+    """ NEW """
+    # 3) Split (keeping the raw df rows for later inspection)
+    X_train, X_test, Y_train, Y_test, df_train, df_test = train_test_split(
+        df[["indication", "patient_sex", "patient_age"]], Y, df, test_size=hyperparameters.test_size, random_state=42)
 
-    # Split the data ensuring that you keep track of the corresponding rows in the original dataframe.
-    X_train, X_test, Y_train, Y_test, df_train, df_test = train_test_split(X, Y, df, test_size=0.1, random_state=42)
-    # remove characters added to the protocol column - characters like [ ] and '
+    # 4) Define a ColumnTransformer that handles:
+    #    - text → TF‑IDF
+    #    - categorical → One‑Hot
+    #    - numeric   → Standard Scaling
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ("text", TfidfVectorizer(stop_words="english"), "indication"),
+            ("sex",  OneHotEncoder(handle_unknown="ignore"),  ["patient_sex"]),
+            ("age",  StandardScaler(),                        ["patient_age"])
+        ],
+        remainder="drop"
+    )
+
+    # 5) Build a Pipeline: preprocess → OneVsRest(LogisticRegression)
+    pipeline = Pipeline([
+        ("preproc", preprocessor),
+        ("clf",     OneVsRestClassifier(LogisticRegression(max_iter=1000)))
+    ])
+
+    # 6) Train
+    pipeline.fit(X_train, Y_train)
+
+    """ OLD """
+    # # Vectorize the free-text 'indication'
+    # vectorizer = TfidfVectorizer(stop_words='english')
+    # X = vectorizer.fit_transform(df['indication'])
+
+    # # Split the data ensuring that you keep track of the corresponding rows in the original dataframe.
+    # X_train, X_test, Y_train, Y_test, df_train, df_test = train_test_split(X, Y, df, test_size=0.1, random_state=42)
+    # # remove characters added to the protocol column - characters like [ ] and '
     df_train['protocol'] = df_train['protocol'].apply(lambda x: re.sub('\'|\[|\]', '', str(x)))
     df_train.to_csv(f"{filepaths.train_dir}df_train.csv")
 
-    # Set up the OneVsRestClassifier with LogisticRegression
-    clf = OneVsRestClassifier(LogisticRegression(max_iter=1000))
-    clf.fit(X_train, Y_train)
+    # # Set up the OneVsRestClassifier with LogisticRegression
+    # clf = OneVsRestClassifier(LogisticRegression(max_iter=1000))
+    # clf.fit(X_train, Y_train)
 
     # Define a function that checks for a positive, non-zero probability and returns a string of all such labels.
     def get_labels_with_positive_prob(probabilities, classes):
@@ -53,7 +84,8 @@ def LogisticModel(corpus, file_output_path):
         return ", ".join(positive_labels)
 
     # Obtain prediction probabilities for the test set
-    probs = clf.predict_proba(X_test)
+    # probs = clf.predict_proba(X_test)
+    probs = pipeline.predict_proba(X_test)
 
     # For each test instance, get the concatenated string of predicted labels with non-zero probability
     predicted_labels_str = [get_labels_with_positive_prob(prob, mlb.classes_) for prob in probs]
@@ -70,5 +102,3 @@ def LogisticModel(corpus, file_output_path):
     # calculate model predictive accuracy
     import model_metrics
     print(model_metrics.model_accuracy(df_test, true_label_column="protocol", prediction_column="predicted_protocol"))
-
-

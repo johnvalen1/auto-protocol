@@ -1,4 +1,4 @@
-train_size = 0.8
-test_size = 0.2
+train_size = 0.9
+test_size = 0.1
 
 prob_cutoff = 0.10
