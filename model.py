@@ -89,3 +89,5 @@ def LogisticModel(dataset, file_output_path):
     # calculate model predictive accuracy
     import model_metrics
     print(model_metrics.model_accuracy(df_test, true_label_column="protocol", prediction_column="predicted_protocol"))
+    print(model_metrics.exact_model_accuracy(df_test, true_label_column="protocol", prediction_column="predicted_protocol"))
+    print(model_metrics.class_accuracies(df_test, true_label_column="protocol", prediction_column="predicted_protocol"))
