@@ -1,10 +1,14 @@
 gold_standard = './CT_Neuro_Gold_Standard.xlsx'
+gold_standard_aug = './CT_Neuro_Gold_Standard - Augmented.xlsx'
+
+
 file_output_path = "./model_results.txt"
 # where to store important .csv's and track metadata
 logs_filepath = "./doc/"
 
 train_dir = logs_filepath + "train/"
 test_dir = logs_filepath + "test/"
+
 
 import os
 if not os.path.exists(train_dir):

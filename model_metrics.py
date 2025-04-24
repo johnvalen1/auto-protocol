@@ -45,7 +45,7 @@ def exact_model_accuracy(df, true_label_column, prediction_column):
 
     return round(num_correct/n_rows, 3)
 
-def class_accuracies(df, true_label_column, prediction_column, write_output = True):
+def class_accuracies(df, true_label_column, prediction_column, augmentation = False, write_output = True):
     """ This function calculates the class-specific accuracies, returning a dictionary and writing to csv if set to true.
     Each class's accuracy is defined as the number of cases where the protocol(s) are contained in the predicted protocol(s) divided by the class's prevalence in the dataset. """
 
@@ -68,19 +68,36 @@ def class_accuracies(df, true_label_column, prediction_column, write_output = Tr
 
         # df_exact_accuracy = pd.DataFrame.from_dict(class_specific_exact_accuracies)
         # df_exact_accuracy.reset_index(drop=True, inplace=True)
-
-        with open(f.logs_filepath + "class_accuracies.csv",  'w', newline='') as a:
-            writer = csv.writer(a)
-            writer.writerow(['Protocol(s)', 'Sensitivity'])  # Header row
-            for key, value in class_specific_accuracies.items():
-                writer.writerow([key, value])
-        with open(f.logs_filepath + "class_exact_accuracies.csv",  'w', newline='') as a:
-            writer = csv.writer(a)
-            writer.writerow(['Protocol(s)', 'Exact Sensitivity'])  # Header row
-            for key, value in class_specific_exact_accuracies.items():
-                writer.writerow([key, value])
+        if augmentation == True:
+            with open(f.logs_filepath + "class_accuracies.csv",  'w', newline='') as a:
+                writer = csv.writer(a)
+                writer.writerow(['Protocol(s)', 'Sensitivity'])  # Header row
+                for key, value in class_specific_accuracies.items():
+                    writer.writerow([key, value])
+            with open(f.logs_filepath + "class_exact_accuracies.csv",  'w', newline='') as a:
+                writer = csv.writer(a)
+                writer.writerow(['Protocol(s)', 'Exact Sensitivity'])  # Header row
+                for key, value in class_specific_exact_accuracies.items():
+                    writer.writerow([key, value])
+        if augmentation == False:
+            with open(f.logs_filepath + "augmented_class_accuracies.csv",  'w', newline='') as a:
+                writer = csv.writer(a)
+                writer.writerow(['Protocol(s)', 'Sensitivity'])  # Header row
+                for key, value in class_specific_accuracies.items():
+                    writer.writerow([key, value])
+            with open(f.logs_filepath + "augmented_class_exact_accuracies.csv",  'w', newline='') as a:
+                writer = csv.writer(a)
+                writer.writerow(['Protocol(s)', 'Exact Sensitivity'])  # Header row
+                for key, value in class_specific_exact_accuracies.items():
+                    writer.writerow([key, value])
 
     return class_specific_accuracies, class_specific_exact_accuracies
+
+
+
+
+
+
 
 
     # gather all protocols into one list
