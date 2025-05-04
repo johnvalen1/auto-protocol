@@ -162,3 +162,98 @@ def LogisticModel(dataset, augmentation):
     print(model_metrics.model_accuracy(df_test, true_label_column="protocol", prediction_column="predicted_protocol"))
     print(model_metrics.exact_model_accuracy(df_test, true_label_column="protocol", prediction_column="predicted_protocol"))
     print(model_metrics.class_accuracies(df_test, true_label_column="protocol", augmentation=augmentation, prediction_column="predicted_protocol"))
+
+
+
+
+# this function fits a logistic model without patient sex and age
+#def LogisticModel(dataset, augmentation):
+def LogisticModel_New(df_gold_standard_train_augmented, df_gold_standard_test, augmentation):
+    # Convert protocol strings to lists
+    df1 = df_gold_standard_train_augmented.copy()
+    df1['protocol'] = df1['protocol'].apply(lambda x: [p.strip() for p in x.split(',')])
+
+    # (Optional) Preserve order from raw data:
+    unique_protocols1 = []
+    for protocols in df1['protocol']:
+        for p in protocols:
+            if p not in unique_protocols1:
+                unique_protocols1.append(p)
+
+    # Initialize MultiLabelBinarizer with your chosen order (or omit "classes" to have sorted order)
+    mlb = MultiLabelBinarizer(classes=unique_protocols1)
+    Y1 = mlb.fit_transform(df1['protocol'])
+
+    # Vectorize the free-text 'indication'
+    vectorizer = TfidfVectorizer(stop_words='english')
+    X1 = vectorizer.fit_transform(df1['indication'])
+
+
+    df2 = df_gold_standard_test.copy()
+    df2['protocol'] = df2['protocol'].apply(lambda x: [p.strip() for p in x.split(',')])
+
+    # (Optional) Preserve order from raw data:
+    unique_protocols2 = []
+    for protocols in df2['protocol']:
+        for p in protocols:
+            if p not in unique_protocols2:
+                unique_protocols2.append(p)
+
+    # Initialize MultiLabelBinarizer with your chosen order (or omit "classes" to have sorted order)
+    mlb = MultiLabelBinarizer(classes=unique_protocols2)
+    Y2 = mlb.fit_transform(df2['protocol'])
+
+    # Vectorize the free-text 'indication'
+    vectorizer = TfidfVectorizer(stop_words='english')
+    X2 = vectorizer.fit_transform(df2['indication'])
+
+
+    """ Read in manually created X_train and X_test, where X_test has class representation for each class as well as ensuring no augmented data in the test set. """
+
+
+    # Split the data ensuring that you keep track of the corresponding rows in the original dataframe.
+    #X_train, X_test, Y_train, Y_test, df_train, df_test = train_test_split(X, Y, df, test_size=0.1, random_state=42)
+
+    """ Using the pre-defined train and test dataframes. """
+    X_train, _, Y_train, _, df_train, _ = train_test_split(X1, Y1, df1, test_size=0, random_state=42)
+    _, X_test, _, _, _, df_test = train_test_split(X2, Y2, df2, test_size=1, random_state=42)
+
+    # remove characters added to the protocol column - characters like [ ] and '
+    df_train['protocol'] = df_train['protocol'].apply(lambda x: re.sub('\'|\[|\]', '', str(x)))
+    if augmentation == True:
+        df_train.to_csv(f"{filepaths.train_dir}augmented_df_train.csv")
+    if augmentation == False:
+        df_train.to_csv(f"{filepaths.train_dir}df_train.csv")
+    # Set up the OneVsRestClassifier with LogisticRegression
+    clf = OneVsRestClassifier(LogisticRegression(max_iter=1000))
+    clf.fit(X_train, Y_train)
+
+    # Define a function that checks for a positive, non-zero probability and returns a string of all such labels.
+    def get_labels_with_positive_prob(probabilities, classes):
+        # Get all labels where the probability is greater than zero
+        positive_labels = [label for label, prob in zip(classes, probabilities) if prob > hyperparameters.prob_cutoff]
+        # Concatenate them into a comma-separated string
+        return ", ".join(positive_labels)
+
+    # Obtain prediction probabilities for the test set
+    probs = clf.predict_proba(X_test)
+
+    # For each test instance, get the concatenated string of predicted labels with non-zero probability
+    predicted_labels_str = [get_labels_with_positive_prob(prob, mlb.classes_) for prob in probs]
+
+    # Add these predicted labels as a new column in the test dataframe
+    df_test = df_test.reset_index(drop=True)
+    df_test['predicted_protocol'] = predicted_labels_str
+    # remove characters added to the protocol column - characters like [ ] and '
+    df_test['protocol'] = df_test['protocol'].apply(lambda x: re.sub('\'|\[|\]', '', str(x)))
+
+    if augmentation == True:
+        df_test.to_csv(f"{filepaths.test_dir}augmented_df_test_with_predictions.csv")
+    if augmentation == False:
+        df_test.to_csv(f"{filepaths.test_dir}df_test_with_predictions.csv")
+
+    # calculate model predictive accuracy
+    import model_metrics
+    print(model_metrics.model_accuracy(df_test, true_label_column="protocol", prediction_column="predicted_protocol"))
+    print(model_metrics.exact_model_accuracy(df_test, true_label_column="protocol", prediction_column="predicted_protocol"))
+    print(model_metrics.class_accuracies(df_test, true_label_column="protocol", augmentation=augmentation, prediction_column="predicted_protocol"))

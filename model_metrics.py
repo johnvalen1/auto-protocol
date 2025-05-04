@@ -60,7 +60,7 @@ def class_accuracies(df, true_label_column, prediction_column, augmentation = Fa
         class_specific_accuracies[protocol_string] = model_accuracy(df_for_protocol, true_label_column, prediction_column)
         class_specific_exact_accuracies[protocol_string] = exact_model_accuracy(df_for_protocol, true_label_column, prediction_column)
 
-    print(class_specific_accuracies)
+    #print(class_specific_accuracies)
 
     if write_output == True:
         # df_accuracy = pd.DataFrame.from_dict(class_specific_accuracies)
@@ -92,13 +92,6 @@ def class_accuracies(df, true_label_column, prediction_column, augmentation = Fa
                     writer.writerow([key, value])
 
     return class_specific_accuracies, class_specific_exact_accuracies
-
-
-
-
-
-
-
 
     # gather all protocols into one list
     # for row in true_label_column:

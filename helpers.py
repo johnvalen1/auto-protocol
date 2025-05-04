@@ -18,8 +18,8 @@ import csv
 # nltk.download('wordnet')
 
 def readData(filepath):
+    columns_needed = ["Identifier", "indication", "protocol", "which_protocol", "patient_sex", "patient_age", "original_or_augmented"]
     df = pd.read_excel(filepath)
-    columns_needed = ["Identifier", "indication", "protocol", "which_protocol", "patient_sex", "patient_age"]
     return pd.DataFrame(df[columns_needed])
 
 
