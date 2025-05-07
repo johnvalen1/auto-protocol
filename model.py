@@ -215,8 +215,10 @@ def LogisticModel_New(df_gold_standard_train_augmented, df_gold_standard_test, a
     #X_train, X_test, Y_train, Y_test, df_train, df_test = train_test_split(X, Y, df, test_size=0.1, random_state=42)
 
     """ Using the pre-defined train and test dataframes. """
-    X_train, _, Y_train, _, df_train, _ = train_test_split(X1, Y1, df1, test_size=0, random_state=42)
-    _, X_test, _, _, _, df_test = train_test_split(X2, Y2, df2, test_size=1, random_state=42)
+    X_train, _, Y_train, _, df_train, _ = train_test_split(X1, Y1, df1, test_size=0.01, random_state=42)
+    _, X_test, _, _, _, df_test = train_test_split(X2, Y2, df2, test_size=0.99, random_state=42)
+    print(X_test)
+    print(Y_train)
 
     # remove characters added to the protocol column - characters like [ ] and '
     df_train['protocol'] = df_train['protocol'].apply(lambda x: re.sub('\'|\[|\]', '', str(x)))
@@ -247,10 +249,7 @@ def LogisticModel_New(df_gold_standard_train_augmented, df_gold_standard_test, a
     # remove characters added to the protocol column - characters like [ ] and '
     df_test['protocol'] = df_test['protocol'].apply(lambda x: re.sub('\'|\[|\]', '', str(x)))
 
-    if augmentation == True:
-        df_test.to_csv(f"{filepaths.test_dir}augmented_df_test_with_predictions.csv")
-    if augmentation == False:
-        df_test.to_csv(f"{filepaths.test_dir}df_test_with_predictions.csv")
+    df_test.to_csv(f"{filepaths.test_dir}df_test_with_predictions.csv")
 
     # calculate model predictive accuracy
     import model_metrics

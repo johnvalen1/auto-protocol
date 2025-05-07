@@ -33,7 +33,7 @@ def preprocessTextField(df, col_name):
     def remove_stopwords():
         stop_words = set(stopwords.words('english'))
 
-        with open(f"{filepaths.logs_filepath}stop_words.csv", "w", newline="") as f:
+        with open(f"{filepaths.preprocess_filepath}stop_words.csv", "w", newline="") as f:
             writer = csv.writer(f)
             for item in stop_words:
                 writer.writerow([item])  # each item goes into a new row
