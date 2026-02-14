@@ -56,6 +56,8 @@ def preprocessTextField(df, col_name):
     df = remove_punctuation()
     df = remove_stopwords()
     df = lemmatize_text()
+    # output Excel file containing pre-processed indication so we can see what the model ingests
+    # make sure that things like # stay as fracture in the dataset
     return df
 
     # return pd.Series([
