@@ -32,6 +32,7 @@ def model_accuracy(df, true_label_column, prediction_column):
 
     return round(num_correct/n_rows, 3)
 
+# rework this to fit the accuracy definition here docs.google.com/document/d/14_VSyfgszrZgSKno2WWkrvr4uqxrOrVfjsCop_MoGO4/edit?tab=t.0
 def exact_model_accuracy(df, true_label_column, prediction_column):
     """ This function returns the exact accuracy of the model's predictions.
     An exactly accurate prediction is defined as the model predicting the exact as the ground truth protocol(s). """
