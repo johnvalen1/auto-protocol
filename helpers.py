@@ -60,16 +60,6 @@ def preprocessTextField(df, col_name):
     # make sure that things like # stay as fracture in the dataset
     return df
 
-    # return pd.Series([
-    # remove_punctuation(
-    #     remove_stopwords(
-    #         lemmatize_text(str(row_indication))))
-    # for row_indication in indication_df])
-
-
-
-
-
 
 def DefineLabelVectorization(label_array):
     """ This function turns the text-based, comma-separated labels into vector representations. """

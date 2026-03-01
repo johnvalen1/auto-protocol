@@ -1,5 +1,8 @@
-gold_standard = './CT_Neuro_Gold_Standard.xlsx'
-gold_standard_aug = './CT_Neuro_Gold_Standard - Augmented.xlsx'
+gold_standard_aug = './CT_Neuro_Gold_Standard - Augmented - v2.xlsx'
+# gold_standard_aug = './CT_Neuro_Gold_Standard - Augmented.xlsx'
+
+# the following train and test sets should be based on the above file, and only this file, where we use the augmented/original column to filter out unneeded rows
+
 gold_standard_train = "./train test sets/CT_Neuro_Gold_Standard - Train Set.xlsx"
 gold_standard_test = "./train test sets/CT_Neuro_Gold_Standard - Test Set.xlsx"
 
