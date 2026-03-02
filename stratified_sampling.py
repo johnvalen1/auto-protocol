@@ -29,7 +29,7 @@ print(len(df))
 df["label_list"] = df[label_column].apply(
     lambda x: [label.strip() for label in str(x).split(",")]
 )
-
+df = df.reset_index(drop=True)
 # Multi-hot encode labels
 mlb = MultiLabelBinarizer()
 Y = mlb.fit_transform(df["label_list"])
@@ -43,7 +43,7 @@ msss = MultilabelStratifiedShuffleSplit(
     test_size=test_size,
     random_state=random_state
 )
-
+print(df)
 for train_idx, test_idx in msss.split(X, Y):
     df["split"] = "train"
     df.loc[test_idx, "split"] = "test"
