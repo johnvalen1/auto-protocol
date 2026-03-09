@@ -18,6 +18,7 @@ from iterstrat.ml_stratifiers import MultilabelStratifiedKFold
 # -------------------------
 
 INPUT_FILE = "./datasets/CT_Neuro_Gold_Standard_V6.xlsx"
+INPUT_FILE_WITH_PREDICTIONS =  "./datasets/CT_Neuro_Gold_Standard_V6_WITH_PREDICTIONS.xlsx"
 OUTPUT_FILE = "./doc/model_results.xlsx"
 MODEL_FILE = "./models/protocol_model.joblib"
 
@@ -229,6 +230,36 @@ sens_df = pd.DataFrame(
     columns=["protocol","sensitivity"]
 )
 
+# -------------------------
+# GENERATE PREDICTIONS FOR TEST SET ONLY
+# -------------------------
+
+# create empty prediction column
+df["predicted_protocols"] = ""
+
+# find rows belonging to the test set
+test_indices = df[df[SPLIT_COL] == "test"].index
+
+# extract indication text for those rows
+X_test_full = df.loc[test_indices, TEXT_COL]
+
+# generate probabilities
+y_test_prob_full = model.predict_proba(X_test_full)
+
+# apply optimized thresholds
+y_test_pred_full = apply_thresholds(y_test_prob_full, final_thresholds)
+
+# convert predictions back to protocol names
+predicted_labels = mlb.inverse_transform(y_test_pred_full)
+
+# write predictions only to test rows
+df.loc[test_indices, "predicted_protocols"] = [
+    ", ".join(labels) if len(labels) > 0 else ""
+    for labels in predicted_labels
+]
+
+# overwrite the input file with predictions added
+df.to_excel(INPUT_FILE_WITH_PREDICTIONS, index=False)
 
 # -------------------------
 # SAVE RESULTS
