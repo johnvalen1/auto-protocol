@@ -10,7 +10,7 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 import nltk
-import filepaths
+import archive_scripts.filepaths as filepaths
 import csv
 # nltk.download('punkt')
 # nltk.download('punkt_tab')

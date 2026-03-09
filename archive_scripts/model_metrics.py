@@ -1,6 +1,6 @@
 import pandas as pd
 import re
-import filepaths as f
+import archive_scripts.filepaths as f
 import csv
 
 def model_accuracy(df, true_label_column, prediction_column):

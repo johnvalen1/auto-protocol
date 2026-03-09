@@ -13,9 +13,9 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import class_labels
-import hyperparameters
-import helpers
-import filepaths
+import archive_scripts.hyperparameters as hyperparameters
+import archive_scripts.helpers as helpers
+import archive_scripts.filepaths as filepaths
 import re
 
 # the base model is a simple logistic regression, which we expand to allow for multi-label outputs
@@ -93,7 +93,7 @@ def LogisticModel_with_sex_and_age(dataset, augmentation):
         df_test.to_csv(f"{filepaths.test_dir}df_test_with_predictions.csv")
 
     # calculate model predictive accuracy
-    import model_metrics
+    import archive_scripts.model_metrics as model_metrics
     print(model_metrics.model_accuracy(df_test, true_label_column="protocol", prediction_column="predicted_protocol"))
     print(model_metrics.exact_model_accuracy(df_test, true_label_column="protocol", prediction_column="predicted_protocol"))
     print(model_metrics.class_accuracies(df_test, true_label_column="protocol", augmentation=augmentation, prediction_column="predicted_protocol"))
@@ -158,7 +158,7 @@ def LogisticModel(dataset, augmentation):
         df_test.to_csv(f"{filepaths.test_dir}df_test_with_predictions.csv")
 
     # calculate model predictive accuracy
-    import model_metrics
+    import archive_scripts.model_metrics as model_metrics
     print(model_metrics.model_accuracy(df_test, true_label_column="protocol", prediction_column="predicted_protocol"))
     print(model_metrics.exact_model_accuracy(df_test, true_label_column="protocol", prediction_column="predicted_protocol"))
     print(model_metrics.class_accuracies(df_test, true_label_column="protocol", augmentation=augmentation, prediction_column="predicted_protocol"))
@@ -252,7 +252,7 @@ def LogisticModel_New(df_gold_standard_train_augmented, df_gold_standard_test, a
     df_test.to_csv(f"{filepaths.test_dir}df_test_with_predictions.csv")
 
     # calculate model predictive accuracy
-    import model_metrics
+    import archive_scripts.model_metrics as model_metrics
     print(model_metrics.model_accuracy(df_test, true_label_column="protocol", prediction_column="predicted_protocol"))
     print(model_metrics.exact_model_accuracy(df_test, true_label_column="protocol", prediction_column="predicted_protocol"))
     print(model_metrics.class_accuracies(df_test, true_label_column="protocol", augmentation=augmentation, prediction_column="predicted_protocol"))

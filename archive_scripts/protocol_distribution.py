@@ -1,6 +1,6 @@
 """ This script returns the class distribution of the input file's protocol column. """
 
-import helpers
+import archive_scripts.helpers as helpers
 import pandas as pd
 
 # input_excel_train_aug = "./train test sets/CT_Neuro_Gold_Standard - Train Set.xlsx"

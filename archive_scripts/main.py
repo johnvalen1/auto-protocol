@@ -1,10 +1,10 @@
-import model
-import helpers
+import archive_scripts.model as model
+import archive_scripts.helpers as helpers
 from sklearn import preprocessing
 import pandas as pd
 from keras.utils import to_categorical
-import hyperparameters
-import filepaths
+import archive_scripts.hyperparameters as hyperparameters
+import archive_scripts.filepaths as filepaths
 
 gold_standard_file = filepaths.gold_standard
 gold_standard_aug_file = filepaths.gold_standard_aug
