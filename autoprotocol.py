@@ -19,7 +19,7 @@ from iterstrat.ml_stratifiers import MultilabelStratifiedKFold
 
 INPUT_FILE = "./datasets/CT_Neuro_Gold_Standard_V6.xlsx"
 OUTPUT_FILE = "./doc/model_results.xlsx"
-MODEL_FILE = "./protocol_model.joblib"
+MODEL_FILE = "./models/protocol_model.joblib"
 
 TEXT_COL = "indication_x1"
 LABEL_COL = "protocol_y"
