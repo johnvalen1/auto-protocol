@@ -7,6 +7,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.pipeline import Pipeline
+# use classifier chains to tell the model which labels occur together frequently
+from sklearn.multioutput import ClassifierChain
 
 from sklearn.metrics import f1_score, roc_auc_score
 
@@ -71,11 +73,12 @@ model = Pipeline([
         max_features=20000,
         stop_words="english"
     )),
-    ("clf", OneVsRestClassifier(
-        LogisticRegression(max_iter=2000)
+    ("clf", ClassifierChain(
+        LogisticRegression(max_iter=2000),
+        order="random",
+        random_state=42
     ))
 ])
-
 
 # -------------------------
 # METRICS
@@ -138,10 +141,28 @@ def optimize_thresholds(y_true, y_prob):
     return thresholds
 
 
-def apply_thresholds(y_prob, thresholds):
+def apply_thresholds_with_limits(y_prob, thresholds, min_labels=1, max_labels=3):
 
-    return (y_prob >= thresholds).astype(int)
+    preds = np.zeros_like(y_prob, dtype=int)
 
+    for i in range(len(y_prob)):
+
+        probs = y_prob[i]
+
+        # labels meeting threshold
+        labels = np.where(probs >= thresholds)[0]
+
+        # enforce minimum predictions
+        if len(labels) < min_labels:
+            labels = np.argsort(probs)[-min_labels:]
+
+        # enforce maximum predictions
+        if len(labels) > max_labels:
+            labels = labels[np.argsort(probs[labels])[-max_labels:]]
+
+        preds[i, labels] = 1
+
+    return preds
 
 # -------------------------
 # CROSS VALIDATION
@@ -173,7 +194,7 @@ for repeat in range(N_REPEATS):
         thresholds = optimize_thresholds(y_val, y_prob)
         all_thresholds.append(thresholds)
 
-        y_pred = apply_thresholds(y_prob, thresholds)
+        y_pred = apply_thresholds_with_limits(y_prob, thresholds)
 
         results = {
             "repeat":repeat,
@@ -211,7 +232,7 @@ model.fit(X_train, Y_train)
 
 y_test_prob = model.predict_proba(X_test)
 
-y_test_pred = apply_thresholds(y_test_prob, final_thresholds)
+y_test_pred = apply_thresholds_with_limits(y_test_prob, final_thresholds)
 
 test_results = {
     "top_k_accuracy":top_k_accuracy(Y_test, y_test_prob, TOP_K),
@@ -247,7 +268,7 @@ X_test_full = df.loc[test_indices, TEXT_COL]
 y_test_prob_full = model.predict_proba(X_test_full)
 
 # apply optimized thresholds
-y_test_pred_full = apply_thresholds(y_test_prob_full, final_thresholds)
+y_test_pred_full = apply_thresholds_with_limits(y_test_prob_full, final_thresholds)
 
 # convert predictions back to protocol names
 predicted_labels = mlb.inverse_transform(y_test_pred_full)
