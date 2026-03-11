@@ -11,6 +11,9 @@ from sklearn.pipeline import Pipeline
 from sklearn.multioutput import ClassifierChain
 # add character n-grams to TFIDF implementation
 from sklearn.pipeline import Pipeline, FeatureUnion
+# add multiple chains with different orders and average their probabilities
+from sklearn.base import clone
+
 from sklearn.metrics import f1_score, roc_auc_score
 
 from iterstrat.ml_stratifiers import MultilabelStratifiedKFold
@@ -32,7 +35,7 @@ SPLIT_COL = "split"
 N_SPLITS = 4
 N_REPEATS = 5
 TOP_K = 3
-
+N_CHAINS = 3
 
 # -------------------------
 # LOAD DATA
@@ -63,6 +66,48 @@ X_test = test_df[TEXT_COL]
 label_names = mlb.classes_
 n_labels = len(label_names)
 
+# -------------------------
+# ENSEMBLE TRAINING FUCTIONS
+# -------------------------
+def train_chain_ensemble(X, Y, base_pipeline, n_chains=5):
+
+    chains = []
+
+    for i in range(n_chains):
+
+        chain_model = clone(base_pipeline)
+
+        chain_model.set_params(
+            clf=ClassifierChain(
+                LogisticRegression(max_iter=2000),
+                order="random",
+                random_state=i
+            )
+        )
+
+        chain_model.fit(X, Y)
+
+        chains.append(chain_model)
+
+    return chains
+
+
+def ensemble_predict_proba(chains, X):
+
+    probs = None
+
+    for model in chains:
+
+        p = model.predict_proba(X)
+
+        if probs is None:
+            probs = p
+        else:
+            probs += p
+
+    probs /= len(chains)
+
+    return probs
 
 # -------------------------
 # MODEL
@@ -202,9 +247,9 @@ for repeat in range(N_REPEATS):
         y_tr = Y_train[train_idx]
         y_val = Y_train[val_idx]
 
-        model.fit(X_tr, y_tr)
+        chains = train_chain_ensemble(X_tr, y_tr, model, N_CHAINS)
 
-        y_prob = model.predict_proba(X_val)
+        y_prob = ensemble_predict_proba(chains, X_val)
 
         thresholds = optimize_thresholds(y_val, y_prob)
         all_thresholds.append(thresholds)
@@ -238,14 +283,14 @@ final_thresholds = np.mean(np.vstack(all_thresholds), axis=0)
 # TRAIN FINAL MODEL
 # -------------------------
 
-model.fit(X_train, Y_train)
+chains = train_chain_ensemble(X_train, Y_train, model, N_CHAINS)
 
 
 # -------------------------
 # TEST SET EVALUATION
 # -------------------------
 
-y_test_prob = model.predict_proba(X_test)
+y_test_prob = ensemble_predict_proba(chains, X_test)
 
 y_test_pred = apply_thresholds_with_limits(y_test_prob, final_thresholds)
 
@@ -280,7 +325,7 @@ test_indices = df[df[SPLIT_COL] == "test"].index
 X_test_full = df.loc[test_indices, TEXT_COL]
 
 # generate probabilities
-y_test_prob_full = model.predict_proba(X_test_full)
+y_test_prob_full = ensemble_predict_proba(chains, X_test_full)
 
 # apply optimized thresholds
 y_test_pred_full = apply_thresholds_with_limits(y_test_prob_full, final_thresholds)
@@ -315,10 +360,10 @@ with pd.ExcelWriter(OUTPUT_FILE) as writer:
 # -------------------------
 
 model_package = {
-    "model":model,
-    "thresholds":final_thresholds,
-    "mlb":mlb,
-    "labels":label_names
+    "chains": chains,
+    "thresholds": final_thresholds,
+    "mlb": mlb,
+    "labels": label_names
 }
 
 joblib.dump(model_package, MODEL_FILE)
