@@ -9,7 +9,8 @@ from sklearn.multiclass import OneVsRestClassifier
 from sklearn.pipeline import Pipeline
 # use classifier chains to tell the model which labels occur together frequently
 from sklearn.multioutput import ClassifierChain
-
+# add character n-grams to TFIDF implementation
+from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.metrics import f1_score, roc_auc_score
 
 from iterstrat.ml_stratifiers import MultilabelStratifiedKFold
@@ -68,11 +69,25 @@ n_labels = len(label_names)
 # -------------------------
 
 model = Pipeline([
-    ("tfidf", TfidfVectorizer(
-        ngram_range=(1,2),
-        max_features=20000,
-        stop_words="english"
-    )),
+    ("features", FeatureUnion([
+
+        # Word-level TF-IDF
+        ("word_tfidf", TfidfVectorizer(
+            analyzer="word",
+            ngram_range=(1,2),
+            max_features=20000,
+            stop_words="english"
+        )),
+
+        # Character-level TF-IDF
+        ("char_tfidf", TfidfVectorizer(
+            analyzer="char_wb",
+            ngram_range=(3,5),
+            max_features=30000
+        ))
+
+    ])),
+
     ("clf", ClassifierChain(
         LogisticRegression(max_iter=2000),
         order="random",
