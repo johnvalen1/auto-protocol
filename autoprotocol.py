@@ -69,7 +69,7 @@ n_labels = len(label_names)
 # -------------------------
 # ENSEMBLE TRAINING FUCTIONS
 # -------------------------
-def train_chain_ensemble(X, Y, base_pipeline, n_chains=5):
+def train_chain_ensemble(X, Y, base_pipeline, n_chains=N_CHAINS):
 
     chains = []
 
