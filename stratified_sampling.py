@@ -3,8 +3,8 @@ from sklearn.preprocessing import MultiLabelBinarizer
 from iterstrat.ml_stratifiers import MultilabelStratifiedShuffleSplit
 
 # ---- SETTINGS ----
-input_file = "./datasets/CT_Neuro_Gold_Standard_V5.xlsx"
-output_file = "./datasets/CT_Neuro_Gold_Standard_V5_with_train_test_split.xlsx"
+input_file = "./datasets/CT_Neuro_Gold_Standard_V6.xlsx"
+output_file = "./datasets/CT_Neuro_Gold_Standard_V6_with_train_test_split.xlsx"
 label_column = "protocol_y"
 test_size = 0.1
 random_state = 42
@@ -56,48 +56,57 @@ df.to_excel(output_file, index=False)
 
 print("Done. File saved as:", output_file)
 
-
-def label_distribution(Y):
-    return Y.mean(axis=0)
-
-Y_train = Y[train_idx]
-Y_test = Y[test_idx]
+# -------------------------------------------------------
+# Label distribution validation (ACTUAL counts + percent)
+# -------------------------------------------------------
 
 import numpy as np
 import pandas as pd
 
-def label_distribution(Y):
-    return Y.mean(axis=0)
+# Convert label matrix to DataFrame
+label_df = pd.DataFrame(Y, columns=mlb.classes_)
 
-# Compute distributions
-overall = label_distribution(Y)
-train_dist = label_distribution(Y_train)
-test_dist = label_distribution(Y_test)
+# Add split column from dataframe
+label_df["split"] = df["split"].values
 
-# Convert to percentage
+# Separate splits
+train_df = label_df[label_df["split"] == "train"].drop(columns="split")
+test_df = label_df[label_df["split"] == "test"].drop(columns="split")
+
+# ---- Counts ----
+total_counts = label_df.drop(columns="split").sum()
+train_counts = train_df.sum()
+test_counts = test_df.sum()
+
+# ---- Percentages ----
+overall_pct = total_counts / len(label_df) * 100
+train_pct = train_counts / len(train_df) * 100
+test_pct = test_counts / len(test_df) * 100
+
+# ---- Build validation table ----
 results = pd.DataFrame({
     "Label": mlb.classes_,
-    "Overall (%)": overall * 100,
-    "Train (%)": train_dist * 100,
-    "Test (%)": test_dist * 100,
-    "Train Diff (%)": (train_dist - overall) * 100,
-    "Test Diff (%)": (test_dist - overall) * 100
+    "Total Count": total_counts.values,
+    "Train Count": train_counts.values,
+    "Test Count": test_counts.values,
+    "Overall (%)": overall_pct.values,
+    "Train (%)": train_pct.values,
+    "Test (%)": test_pct.values,
+    "Train Diff (%)": (train_pct - overall_pct).values,
+    "Test Diff (%)": (test_pct - overall_pct).values
 })
 
-# Round for readability
 results = results.round(3)
 
-# print(results)
-
-# print("\nMaximum absolute difference:")
-# print("Train:", np.abs(train_dist - overall).max() * 100, "%")
-# print("Test:", np.abs(test_dist - overall).max() * 100, "%")
+# Sort by rarest labels
+results = results.sort_values("Total Count")
 
 output_validation_file = "./doc/label_distribution_validation.xlsx"
 
-# Write to Excel
-results.to_excel(output_validation_file,
-                 index=False,
-                 sheet_name="Label Distribution")
+results.to_excel(
+    output_validation_file,
+    index=False,
+    sheet_name="Label Distribution"
+)
 
 print(f"Validation report written to: {output_validation_file}")
