@@ -25,7 +25,7 @@ from iterstrat.ml_stratifiers import MultilabelStratifiedKFold
 
 INPUT_FILE = "./datasets/CT_Neuro_Gold_Standard_V6.xlsx"
 INPUT_FILE_WITH_PREDICTIONS =  "./datasets/CT_Neuro_Gold_Standard_V6_WITH_PREDICTIONS.xlsx"
-OUTPUT_FILE = "./doc/model_results.xlsx"
+OUTPUT_FILE = "./datasets/model_results.xlsx"
 MODEL_FILE = "./models/protocol_model.joblib"
 
 TEXT_COL = "indication_x1"

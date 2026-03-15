@@ -5,6 +5,8 @@ from iterstrat.ml_stratifiers import MultilabelStratifiedShuffleSplit
 # ---- SETTINGS ----
 input_file = "./datasets/CT_Neuro_Gold_Standard_V6.xlsx"
 output_file = "./datasets/CT_Neuro_Gold_Standard_V6_with_train_test_split.xlsx"
+output_validation_file = "./datasets/label_distribution_validation.xlsx"
+
 label_column = "protocol_y"
 test_size = 0.1
 random_state = 42
@@ -101,7 +103,6 @@ results = results.round(3)
 # Sort by rarest labels
 results = results.sort_values("Total Count")
 
-output_validation_file = "./doc/label_distribution_validation.xlsx"
 
 results.to_excel(
     output_validation_file,
