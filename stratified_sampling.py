@@ -17,6 +17,7 @@ df = pd.read_excel(input_file,
     sheet_name="data")   # exact sheet name)
 print(len(df))
 # exclude augmented records
+
 df = df[
     (df["original_or_augmented"] == "original")
 ]

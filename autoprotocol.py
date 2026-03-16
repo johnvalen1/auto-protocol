@@ -5,16 +5,16 @@ import joblib
 from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.multiclass import OneVsRestClassifier
-from sklearn.pipeline import Pipeline
-# use classifier chains to tell the model which labels occur together frequently
 from sklearn.multioutput import ClassifierChain
-# add character n-grams to TFIDF implementation
 from sklearn.pipeline import Pipeline, FeatureUnion
-# add multiple chains with different orders and average their probabilities
 from sklearn.base import clone
 
-from sklearn.metrics import f1_score, roc_auc_score
+from sklearn.metrics import (
+    f1_score,
+    roc_auc_score,
+    hamming_loss,
+    accuracy_score,
+)
 
 from iterstrat.ml_stratifiers import MultilabelStratifiedKFold
 
@@ -24,7 +24,7 @@ from iterstrat.ml_stratifiers import MultilabelStratifiedKFold
 # -------------------------
 
 INPUT_FILE = "./datasets/CT_Neuro_Gold_Standard_V6.xlsx"
-INPUT_FILE_WITH_PREDICTIONS =  "./datasets/CT_Neuro_Gold_Standard_V6_WITH_PREDICTIONS.xlsx"
+INPUT_FILE_WITH_PREDICTIONS = "./datasets/CT_Neuro_Gold_Standard_V6_WITH_PREDICTIONS.xlsx"
 OUTPUT_FILE = "./datasets/model_results.xlsx"
 MODEL_FILE = "./models/protocol_model.joblib"
 
@@ -36,6 +36,7 @@ N_SPLITS = 4
 N_REPEATS = 5
 TOP_K = 3
 N_CHAINS = 3
+
 
 # -------------------------
 # LOAD DATA
@@ -66,9 +67,11 @@ X_test = test_df[TEXT_COL]
 label_names = mlb.classes_
 n_labels = len(label_names)
 
+
 # -------------------------
-# ENSEMBLE TRAINING FUCTIONS
+# ENSEMBLE TRAINING
 # -------------------------
+
 def train_chain_ensemble(X, Y, base_pipeline, n_chains=N_CHAINS):
 
     chains = []
@@ -86,7 +89,6 @@ def train_chain_ensemble(X, Y, base_pipeline, n_chains=N_CHAINS):
         )
 
         chain_model.fit(X, Y)
-
         chains.append(chain_model)
 
     return chains
@@ -109,6 +111,7 @@ def ensemble_predict_proba(chains, X):
 
     return probs
 
+
 # -------------------------
 # MODEL
 # -------------------------
@@ -116,7 +119,6 @@ def ensemble_predict_proba(chains, X):
 model = Pipeline([
     ("features", FeatureUnion([
 
-        # Word-level TF-IDF
         ("word_tfidf", TfidfVectorizer(
             analyzer="word",
             ngram_range=(1,2),
@@ -124,7 +126,6 @@ model = Pipeline([
             stop_words="english"
         )),
 
-        # Character-level TF-IDF
         ("char_tfidf", TfidfVectorizer(
             analyzer="char_wb",
             ngram_range=(3,5),
@@ -139,6 +140,7 @@ model = Pipeline([
         random_state=42
     ))
 ])
+
 
 # -------------------------
 # METRICS
@@ -171,6 +173,100 @@ def sensitivity_per_class(y_true, y_pred):
         sens[label] = tp/(tp+fn) if (tp+fn)>0 else np.nan
 
     return sens
+
+
+# -------------------------
+# GLOBAL METRICS
+# -------------------------
+
+def compute_global_metrics(y_true, y_pred, y_prob):
+
+    metrics = {}
+
+    metrics["weighted_f1"] = f1_score(y_true, y_pred, average="weighted")
+    metrics["micro_f1"] = f1_score(y_true, y_pred, average="micro")
+    metrics["macro_f1"] = f1_score(y_true, y_pred, average="macro")
+
+    metrics["hamming_loss"] = hamming_loss(y_true, y_pred)
+
+    metrics["subset_accuracy"] = accuracy_score(y_true, y_pred)
+
+    metrics["macro_auc"] = roc_auc_score(y_true, y_prob, average="macro")
+
+    return metrics
+
+
+# -------------------------
+# BOOTSTRAP CONFIDENCE INTERVALS
+# -------------------------
+
+def bootstrap_metrics(y_true, y_pred, y_prob, n_boot=1000):
+
+    rng = np.random.default_rng(42)
+    results = []
+
+    n = len(y_true)
+
+    for i in range(n_boot):
+
+        idx = rng.choice(n, n, replace=True)
+
+        y_t = y_true[idx]
+        y_p = y_pred[idx]
+        y_pr = y_prob[idx]
+
+        metrics = compute_global_metrics(y_t, y_p, y_pr)
+
+        results.append(metrics)
+
+    boot_df = pd.DataFrame(results)
+
+    ci = boot_df.quantile([0.025,0.975]).T
+    ci.columns = ["ci_lower","ci_upper"]
+
+    mean_vals = boot_df.mean()
+
+    summary = pd.concat([mean_vals, ci], axis=1)
+    summary.columns = ["mean","ci_lower","ci_upper"]
+
+    return summary, boot_df
+
+
+# -------------------------
+# PER PROTOCOL CONFUSION
+# -------------------------
+
+def protocol_confusion_stats(y_true, y_pred):
+
+    rows = []
+
+    for i, label in enumerate(label_names):
+
+        tp = np.sum((y_true[:,i]==1) & (y_pred[:,i]==1))
+        fp = np.sum((y_true[:,i]==0) & (y_pred[:,i]==1))
+        fn = np.sum((y_true[:,i]==1) & (y_pred[:,i]==0))
+        tn = np.sum((y_true[:,i]==0) & (y_pred[:,i]==0))
+
+        sensitivity = tp/(tp+fn) if (tp+fn)>0 else np.nan
+        precision = tp/(tp+fp) if (tp+fp)>0 else np.nan
+
+        f1 = (
+            2*precision*sensitivity/(precision+sensitivity)
+            if (precision+sensitivity)>0 else np.nan
+        )
+
+        rows.append({
+            "protocol":label,
+            "tp":tp,
+            "fp":fp,
+            "fn":fn,
+            "tn":tn,
+            "sensitivity":sensitivity,
+            "precision":precision,
+            "f1":f1
+        })
+
+    return pd.DataFrame(rows)
 
 
 # -------------------------
@@ -209,20 +305,18 @@ def apply_thresholds_with_limits(y_prob, thresholds, min_labels=1, max_labels=3)
 
         probs = y_prob[i]
 
-        # labels meeting threshold
         labels = np.where(probs >= thresholds)[0]
 
-        # enforce minimum predictions
         if len(labels) < min_labels:
             labels = np.argsort(probs)[-min_labels:]
 
-        # enforce maximum predictions
         if len(labels) > max_labels:
             labels = labels[np.argsort(probs[labels])[-max_labels:]]
 
         preds[i, labels] = 1
 
     return preds
+
 
 # -------------------------
 # CROSS VALIDATION
@@ -260,8 +354,11 @@ for repeat in range(N_REPEATS):
             "repeat":repeat,
             "fold":fold,
             "top_k_accuracy":top_k_accuracy(y_val, y_prob, TOP_K),
+            "weighted_f1":f1_score(y_val, y_pred, average="weighted"),
+            "micro_f1":f1_score(y_val, y_pred, average="micro"),
             "macro_f1":f1_score(y_val, y_pred, average="macro"),
-            "sample_f1":f1_score(y_val, y_pred, average="samples"),
+            "hamming_loss":hamming_loss(y_val, y_pred),
+            "subset_accuracy":accuracy_score(y_val, y_pred),
             "macro_auc":roc_auc_score(y_val, y_prob, average="macro")
         }
 
@@ -294,22 +391,29 @@ y_test_prob = ensemble_predict_proba(chains, X_test)
 
 y_test_pred = apply_thresholds_with_limits(y_test_prob, final_thresholds)
 
-test_results = {
-    "top_k_accuracy":top_k_accuracy(Y_test, y_test_prob, TOP_K),
-    "macro_f1":f1_score(Y_test, y_test_pred, average="macro"),
-    "sample_f1":f1_score(Y_test, y_test_pred, average="samples"),
-    "macro_auc":roc_auc_score(Y_test, y_test_prob, average="macro")
-}
+test_metrics = compute_global_metrics(Y_test, y_test_pred, y_test_prob)
+test_metrics["top_k_accuracy"] = top_k_accuracy(Y_test, y_test_prob, TOP_K)
 
 test_results_df = pd.DataFrame(
-    list(test_results.items()),
+    list(test_metrics.items()),
     columns=["metric","value"]
 )
+
+test_ci_df, boot_dist = bootstrap_metrics(
+    Y_test,
+    y_test_pred,
+    y_test_prob
+)
+
+test_ci_df = test_ci_df.reset_index()
+test_ci_df.rename(columns={"index":"metric"}, inplace=True)
 
 sens_df = pd.DataFrame(
     sensitivity_per_class(Y_test, y_test_pred).items(),
     columns=["protocol","sensitivity"]
 )
+
+protocol_conf_df = protocol_confusion_stats(Y_test, y_test_pred)
 
 # -------------------------
 # GENERATE PREDICTIONS FOR TEST SET ONLY
@@ -328,7 +432,10 @@ X_test_full = df.loc[test_indices, TEXT_COL]
 y_test_prob_full = ensemble_predict_proba(chains, X_test_full)
 
 # apply optimized thresholds
-y_test_pred_full = apply_thresholds_with_limits(y_test_prob_full, final_thresholds)
+y_test_pred_full = apply_thresholds_with_limits(
+    y_test_prob_full,
+    final_thresholds
+)
 
 # convert predictions back to protocol names
 predicted_labels = mlb.inverse_transform(y_test_pred_full)
@@ -339,8 +446,9 @@ df.loc[test_indices, "predicted_protocols"] = [
     for labels in predicted_labels
 ]
 
-# overwrite the input file with predictions added
+# save updated dataset with predictions
 df.to_excel(INPUT_FILE_WITH_PREDICTIONS, index=False)
+
 
 # -------------------------
 # SAVE RESULTS
@@ -352,11 +460,16 @@ with pd.ExcelWriter(OUTPUT_FILE) as writer:
     cv_summary.to_excel(writer,"CV_Summary")
 
     test_results_df.to_excel(writer,"Test_Metrics",index=False)
-    sens_df.to_excel(writer,"Test_Sensitivity",index=False)
+    test_ci_df.to_excel(writer,"Test_Metrics_CI",index=False)
+
+    sens_df.to_excel(writer,"Protocol_Sensitivity",index=False)
+    protocol_conf_df.to_excel(writer,"Protocol_Confusion",index=False)
+
+    # boot_dist.to_excel(writer,"Bootstrap_Distributions",index=False)
 
 
 # -------------------------
-# SAVE MODEL FOR REUSE
+# SAVE MODEL
 # -------------------------
 
 model_package = {
