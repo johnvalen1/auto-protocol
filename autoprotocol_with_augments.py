@@ -18,13 +18,12 @@ from sklearn.metrics import (
 
 from iterstrat.ml_stratifiers import MultilabelStratifiedKFold
 
-
 # -------------------------
 # SETTINGS
 # -------------------------
 
-INPUT_FILE = "./datasets/CT_Neuro_Gold_Standard_V6 - with_augments.xlsx"
-INPUT_FILE_WITH_PREDICTIONS = "./datasets/CT_Neuro_Gold_Standard_V6_with_augments_WITH_PREDICTIONS.xlsx"
+INPUT_FILE = "./datasets/CT_Neuro_Gold_Standard_V7_with_augments_lower_classes.xlsx"
+INPUT_FILE_WITH_PREDICTIONS = "./datasets/CT_Neuro_Gold_Standard_V7_with_augments_WITH_PREDICTIONS.xlsx"
 OUTPUT_FILE = "./datasets/model_results_with_augments.xlsx"
 MODEL_FILE = "./models/protocol_model_with_augments.joblib"
 
@@ -43,6 +42,9 @@ N_CHAINS = 3
 # -------------------------
 
 df = pd.read_excel(INPUT_FILE, sheet_name="data")
+
+# Remove unwanted rows - classes that have low representation
+df = df[df["exclude_record"].astype(str).str.upper() != "TRUE"].reset_index(drop=True)
 
 df[LABEL_COL] = df[LABEL_COL].apply(
     lambda x: [i.strip() for i in str(x).split(",")]

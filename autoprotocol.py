@@ -23,10 +23,10 @@ from iterstrat.ml_stratifiers import MultilabelStratifiedKFold
 # SETTINGS
 # -------------------------
 
-INPUT_FILE = "./datasets/CT_Neuro_Gold_Standard_V6.xlsx"
-INPUT_FILE_WITH_PREDICTIONS = "./datasets/CT_Neuro_Gold_Standard_V6_WITH_PREDICTIONS.xlsx"
-OUTPUT_FILE = "./datasets/model_results.xlsx"
-MODEL_FILE = "./models/protocol_model.joblib"
+INPUT_FILE = "./datasets/CT_Neuro_Gold_Standard_V7_with_augments_lower_classes.xlsx"
+INPUT_FILE_WITH_PREDICTIONS = "./datasets/CT_Neuro_Gold_Standard_V7_baseline_WITH_PREDICTIONS.xlsx"
+OUTPUT_FILE = "./datasets/baseline_model_results.xlsx"
+MODEL_FILE = "./models/baseline_protocol_model.joblib"
 
 TEXT_COL = "indication_x1"
 LABEL_COL = "protocol_y"
@@ -43,6 +43,12 @@ N_CHAINS = 3
 # -------------------------
 
 df = pd.read_excel(INPUT_FILE, sheet_name="data")
+
+# Remove augmented rows
+df = df[df["original_or_augmented"] != "augmented"].reset_index(drop=True)
+
+# Remove unwanted rows - classes that have low representation
+df = df[df["exclude_record"].astype(str).str.upper() != "TRUE"].reset_index(drop=True)
 
 df[LABEL_COL] = df[LABEL_COL].apply(
     lambda x: [i.strip() for i in str(x).split(",")]
