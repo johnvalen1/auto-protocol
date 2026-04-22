@@ -23,10 +23,10 @@ from iterstrat.ml_stratifiers import MultilabelStratifiedKFold
 # SETTINGS
 # -------------------------
 
-INPUT_FILE = "./datasets/CT_Neuro_Gold_Standard_V7_with_augments_lower_classes.xlsx"
-INPUT_FILE_WITH_PREDICTIONS = "./datasets/CT_Neuro_Gold_Standard_V7_baseline_WITH_PREDICTIONS.xlsx"
-OUTPUT_FILE = "./datasets/baseline_model_results.xlsx"
-MODEL_FILE = "./models/baseline_protocol_model.joblib"
+INPUT_FILE = "./datasets/CT_Neuro_Gold_Standard_V7_with_augments_lower_classes - 90-10.xlsx"
+INPUT_FILE_WITH_PREDICTIONS = "./datasets/CT_Neuro_Gold_Standard_V7_baseline_WITH_PREDICTIONS-90-10.xlsx"
+OUTPUT_FILE = "./datasets/baseline_model_results-90-10.xlsx"
+MODEL_FILE = "./models/baseline_protocol_model-90-10.joblib"
 
 TEXT_COL = "indication_x1"
 LABEL_COL = "protocol_y"
@@ -49,6 +49,10 @@ df = df[df["original_or_augmented"] != "augmented"].reset_index(drop=True)
 
 # Remove unwanted rows - classes that have low representation
 df = df[df["exclude_record"].astype(str).str.upper() != "TRUE"].reset_index(drop=True)
+
+#Remove clinically ambiguous rows
+df = df[df["exclude_record_based_on_anatomical_ambiguity"].astype(str).str.upper() != "TRUE"].reset_index(drop=True)
+
 
 df[LABEL_COL] = df[LABEL_COL].apply(
     lambda x: [i.strip() for i in str(x).split(",")]
