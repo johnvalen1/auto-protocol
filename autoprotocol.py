@@ -23,10 +23,13 @@ from iterstrat.ml_stratifiers import MultilabelStratifiedKFold
 # SETTINGS
 # -------------------------
 
-INPUT_FILE = "./datasets/CT_Neuro_Gold_Standard_V7_with_augments_lower_classes - 90-10.xlsx"
-INPUT_FILE_WITH_PREDICTIONS = "./datasets/CT_Neuro_Gold_Standard_V7_baseline_WITH_PREDICTIONS-90-10.xlsx"
-OUTPUT_FILE = "./datasets/baseline_model_results-90-10.xlsx"
-MODEL_FILE = "./models/baseline_protocol_model-90-10.joblib"
+# input
+INPUT_FILE = "./datasets/CT_Neuro_Gold_Standard_V8_baseline.xlsx"
+
+# outputs
+OUTPUT_FILE_WITH_PREDICTIONS = "./datasets/input_data_with_BASELINE_model_predictions.xlsx"
+OUTPUT_FILE = "./datasets/baseline_model_results.xlsx"
+MODEL_FILE = "./models/baseline_protocol_model.joblib"
 
 TEXT_COL = "indication_x1"
 LABEL_COL = "protocol_y"
@@ -48,7 +51,7 @@ df = pd.read_excel(INPUT_FILE, sheet_name="data")
 df = df[df["original_or_augmented"] != "augmented"].reset_index(drop=True)
 
 # Remove unwanted rows - classes that have low representation
-df = df[df["exclude_record"].astype(str).str.upper() != "TRUE"].reset_index(drop=True)
+df = df[df["exclude_record_based_on_low_class_rep"].astype(str).str.upper() != "TRUE"].reset_index(drop=True)
 
 #Remove clinically ambiguous rows
 df = df[df["exclude_record_based_on_anatomical_ambiguity"].astype(str).str.upper() != "TRUE"].reset_index(drop=True)
@@ -457,7 +460,7 @@ df.loc[test_indices, "predicted_protocols"] = [
 ]
 
 # save updated dataset with predictions
-df.to_excel(INPUT_FILE_WITH_PREDICTIONS, index=False)
+df.to_excel(OUTPUT_FILE_WITH_PREDICTIONS, index=False)
 
 
 # -------------------------
