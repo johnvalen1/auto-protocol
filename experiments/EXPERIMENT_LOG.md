@@ -267,7 +267,31 @@ examined during Exps 0–3, including six Head C+ test referrals inspected durin
 Exp 1 diagnosis, and test results for five of the six candidates were seen before
 this entry. Exp 4 adds one new condition, and selection uses cross-validation only.
 
-**Results:** _(Stage 1 selection, then seed check, then Stage 2 test results, in that order)_
+**Stage 1 — selection (CV only; recorded 2026-11-02 before any Exp 4 test metric)**
+
+| Candidate | S_aug | S_non | P_micro | Macro F1 | Advised/case | Eligible |
+|---|---|---|---|---|---|---|
+| baseline | 32.6% (±3.0) | 76.0% | 67.5% | 0.40 | 1.31 | yes |
+| class weighting | 46.4% (±1.5) | 75.8% | **64.3%** | 0.42 | 1.38 | no (precision) |
+| random oversampling | 36.0% (±2.3) | 76.6% | 67.0% | 0.41 | 1.33 | yes |
+| **GPT-4o aug** | **44.7% (±1.9)** | 76.6% | 67.7% | **0.48** | 1.33 | **yes** |
+| GPT-4o aug + class weighting | 52.8% (±1.8) | 75.4% | **64.9%** | 0.46 | 1.37 | no (precision) |
+| GPT-4o aug + counterbalance | 42.0% (±2.3) | 76.5% | 67.3% | 0.47 | 1.33 | yes |
+
+(± = SD across the 5 CV repeats.) Eligibility thresholds: S_non ≥ 75.03%,
+P_micro ≥ 66.49%.
+
+**Selected: GPT-4o aug (real-only threshold tuning)** — rule 2, highest S_aug among
+eligible candidates (lead over the next eligible candidate, counterbalance, 2.6 pts).
+
+Note: the combined condition has the highest minority sensitivity of all (52.8%) but
+loses 2.6 points of micro precision versus baseline, as does class weighting (−3.2);
+both buy sensitivity by advising more protocols. They are reported in the paper as
+alternatives favouring sensitivity over precision.
+
+**Seed check:** _(pending)_
+
+**Stage 2 — test results:** _(pending)_
 
 ---
 
