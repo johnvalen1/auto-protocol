@@ -1,0 +1,179 @@
+# Experiment log: LLM augmentation for CT neuro protocol classification
+
+Running record of every analysis done for the paper. Each experiment's plan, primary
+endpoint and decision rule are written here **before** it is run; results are added
+after. Nothing is removed — failed or negative experiments stay in.
+
+- Data: `CT_Neuro_Gold_Standard_V7_with_augments_lower_classes.xlsx`, sheet `data`
+  (rows with `exclude_record = TRUE` dropped; 8,796 real + 1,227 synthetic rows).
+- Split: fixed `split` column (7,795 real train / 1,001 real test). Synthetic rows are
+  train only. The test set is never used for tuning or selection.
+- Code: branch `experiment/real-only-threshold-tuning`, folder `experiments/`.
+- Compute: Anthropic cloud workspace (Python 3, scikit-learn 1.9.1). Dataset contains
+  random record identifiers only, no direct identifiers (confirmed by J. Valen, 2026-11-01).
+
+## Model (unchanged across all experiments)
+
+As implemented in `autoprotocol.py` / `autoprotocol_with_augments.py`:
+- Features: word TF-IDF (1–2-grams, 20k features, English stop words) + character
+  TF-IDF (`char_wb` 3–5-grams, 30k features).
+- Classifier: ensemble of 3 `ClassifierChain`s of logistic regressions (random label
+  order, seeds 0–2), probabilities averaged.
+- Output: per-protocol thresholds chosen to maximise per-protocol F1 over a grid
+  0.05–0.95 (step 0.05), averaged across 5 × 4-fold multilabel-stratified CV folds;
+  each case gets 1–3 advised protocols.
+- Top-k accuracy in the code = any true protocol among the 3 highest-probability
+  protocols (threshold-independent).
+
+> **Paper note:** the ARRS deck (slides 8–10) describes "bag-of-words, one-vs-rest
+> logistic regression". The code is the TF-IDF classifier-chain ensemble above. The
+> paper's methods must describe the code. Slides 3 and 10 define top-k as "all true
+> protocols among advised", which is not what the code computes; the abstract's
+> wording ("true protocol present among advised") is closer.
+
+---
+
+## Exp 0 — Audit of submitted results (2026-10-31)
+
+**Question:** do the numbers in the ARRS deck/abstract (SC1449) reproduce from the data
+and the saved predictions (`p_value_computations_1.xlsx`)?
+
+**Findings**
+- Cohort numbers reproduce exactly (8,796 real; 7,795/1,001; 1,227 synthetic; median
+  age 61, IQR 38–77; 50.6% female; 8.8% paediatric).
+- Per-protocol sensitivities (deck slides 18–19) reproduce exactly.
+- Top-k 89% → 92% does **not** reproduce: the repo metric gives 87.6% → 91.7%; the
+  slide's definition ("all true protocols among advised") gives 65.4% → 67.2%.
+- "+22% mean class-specific accuracy" reproduces as +18 points (25.4% → 43.6%).
+- Per-protocol tests on slides 18–19 used Fisher's exact test, which assumes
+  independent samples; both models are scored on the same cases, so McNemar (paired)
+  is correct. Under McNemar: L Spine C+ p = 0.06 (not significant), Temporal Bones C+
+  p = 0.016, Head C+ loss p = 0.031.
+- `p_value_computations_2.xlsx` lists Neck NC augmented sensitivity as 0.816; correct
+  value is 0.118 (2/17).
+- Author name differs: abstract "Jason Chong", deck "Jaron Chong".
+
+**Main observation:** high-volume protocols (Head NC, TIA, Neck C+) were stable;
+the losses were in mid-frequency protocols (Head C+, C Spine NC, Head & Neck Angio,
+L Spine NC, Head Venogram, T Spine NC), each with higher precision but lower
+sensitivity — the model advised them less often.
+
+## Exp 1 — Real-only threshold tuning (2026-11-01)
+
+**Rationale (from Exp 0):** in `autoprotocol_with_augments.py` CV folds are drawn over
+real + synthetic rows, so each minority protocol's threshold is tuned largely on
+synthetic validation rows, which are easier than real referrals.
+
+**Intervention:** CV folds drawn over real rows only; all synthetic rows added to every
+training fold; thresholds tuned on real validation rows only. Model unchanged.
+
+**Pre-specified primary comparison:** augmented + real-only tuning (repo's fold-averaged
+threshold rule) vs baseline. Pooled out-of-fold threshold tuning run as an ablation.
+
+**Results (test, n = 1,001)**
+- Repo augmented model reproduces `p_value_computations_1.xlsx` exactly.
+- Mid-frequency protocols recovered: Head & Neck Angio 38%→38%, L Spine NC 74%→74%,
+  Head Venogram 89%→89%, T Spine NC 56%→56%, C Spine NC 61%→58% (repo augmented: 34%,
+  71%, 83%, 50%, 55%). Orbits NC 47%→41% (repo augmented 24%).
+- Mean sensitivity, 10 non-augmented protocols: 60.8% → 61.2% (repo augmented 59.3%).
+- Mean sensitivity, 11 augmented protocols: 25.4% → 43.6% (unchanged vs repo augmented).
+- Sinus NC 0%→71% (Holm-adjusted p = 0.011); Temporal Bones C+ 12%→41%.
+- **Head C+ not recovered:** 54% → 46% (6 lost, 0 gained, McNemar p = 0.031,
+  Holm p = 0.66). Confirmed in CV on 511 real training cases: 48.6% → 42.5%.
+  Its threshold barely changed (0.17 → 0.18), so the cause is not thresholding.
+- Pooled-tuning ablation gave the same pattern.
+
+## Exp 2 — Counterbalancing infection cue terms (2026-11-01)
+
+**Rationale (from Exp 1):** the residual Head C+ loss is in the probabilities, not
+the threshold. Using **training data only** (Exp 1 out-of-fold predictions), 22 real
+Head C+ training cases were lost after augmentation; the most over-represented terms
+were mastoid/mastoiditis (36% of lost vs 1% of kept), infection and drainage.
+Synthetic vs real labelling of these referrals differs: 78% of 112 synthetic "mastoid"
+rows are Temporal Bones C+, while 75% of 79 real "mastoid" referrals were protocoled
+Head NC / Head C+ / Neck C+. Among training rows matching `mastoid|infect|drainage`,
+the share carrying a non-augmented protocol fell from 89.3% to 54.6% after augmentation.
+(Six lost Head C+ *test* cases had been inspected earlier; they were not used to
+choose the terms.)
+
+**Intervention:** within each training fold only, real rows matching the cue terms and
+carrying ≥1 non-augmented protocol repeated k times; synthetic rows kept.
+k chosen by formula to restore the 89.3% share: k = 6.94 → 7 (primary, pre-declared);
+k = 3 and 14 as CV-only robustness checks.
+
+**Results**
+- Test: Head C+ 46% → 50% (baseline 54%; 3 lost vs 6, McNemar p = 0.25).
+  Head NC 82%, Neck C+ 86%, L Spine NC 77% (all ≥ baseline).
+- CV (real training rows): Head C+ 42.5% → 44.4% (baseline 48.6%); mean
+  augmented-protocol sensitivity 41.8% → 38.1%; non-augmented mean unchanged
+  (56.9% → 56.8%). Losses in Temporal Bones NC/C+, Orbits NC, Facial Bones C+.
+- k = 3 and 14 gave the same pattern; Head C+ CV never exceeded ~44%.
+
+**Conclusion:** counterbalancing trades minority gains for a partial Head C+ recovery.
+It confirms the mechanism (dose-response between real-convention weighting and
+Head C+ vs Temporal Bones C+), but Exp 1 remains the preferred configuration.
+The residual cost reflects a mismatch between GPT-4o's textbook protocol choices and
+local protocoling practice; the fix belongs in data generation (local exemplars in
+the prompt, targeted radiologist label review of overlapping indications).
+
+**Data issue found:** "Head Angiogram or COW" (20 real train, 2 test) and
+"Head angiogram or COW" are treated as separate protocols (22 classes, not 21).
+
+---
+
+## Exp 3 — Label fix, non-LLM controls, aggregate endpoint (pre-registered 2026-11-01 20:50 CT)
+
+**Rationale:** (a) the duplicate label invalidates the "21 protocols" claim, so all
+main conditions are rerun after merging it; (b) the paper must show that the gain
+comes from LLM-generated text, not simply from more minority examples or from
+reweighting; (c) with 17–18 test cases per minority protocol, per-protocol tests are
+underpowered, so a single pre-specified aggregate endpoint is defined.
+
+**Changes:** `LABEL_FIX=1` merges "Head Angiogram or COW" → "Head angiogram or COW"
+(21 classes). Everything else identical to Exp 1.
+
+**Conditions** (all: real-row CV folds, thresholds tuned on real rows only, same seeds)
+1. `baseline` — real data only.
+2. `baseline_cw` — real data only, `class_weight="balanced"` (control).
+3. `ros` — real data only; within each training fold, real rows of each augmented
+   protocol resampled with replacement, adding as many copies as that protocol has
+   synthetic rows (identical per-protocol dose to GPT-4o augmentation) (control).
+4. `aug_realval` — GPT-4o augmentation with real-only tuning (Exp 1 method).
+5. `aug_original` — GPT-4o augmentation with the repo's original tuning (reference).
+6. `aug_realval_cb` — Exp 2 counterbalancing, k by formula (reference).
+
+**Primary endpoint:** pooled sensitivity over all (case, protocol) pairs whose true
+protocol is one of the 11 augmented protocols, on the real test set. Comparisons:
+`aug_realval` vs `baseline` (does augmentation help), `aug_realval` vs `ros` and
+`aug_realval` vs `baseline_cw` (is it the LLM text). Test: McNemar on paired
+(case, protocol) outcomes; 95% CI for the difference by case-level bootstrap
+(2,000 resamples, seed 42). Holm correction across the three primary comparisons.
+
+**Key secondary endpoints:** pooled sensitivity over the 10 non-augmented protocols
+(non-inferiority check; same tests); per-protocol sensitivity/precision with McNemar
++ Holm (21 tests); macro/micro/weighted F1, subset accuracy, Hamming loss, macro AUC,
+top-3 accuracy; all endpoints repeated in CV on real training rows (5 × 4 folds,
+thresholds for each fold tuned on the other folds).
+
+**Decision rules (fixed in advance)**
+- "LLM augmentation adds value beyond non-LLM rebalancing" if `aug_realval` beats both
+  `ros` and `baseline_cw` on the primary endpoint (Holm-adjusted p < 0.05) **and** the
+  CV primary endpoint points the same way. If not, the paper reports that, and the
+  claim is narrowed accordingly.
+- No condition is added, dropped or re-tuned after test results are seen.
+
+**Results:** _(to be filled in after the run)_
+
+---
+
+## Open items for the paper (not experiments)
+
+- [ ] Radiologist verification of synthetic rows: number reviewed, number accepted /
+      edited / rejected, reviewer, criteria.
+- [ ] GPT-4o prompt(s), generation date, temperature/settings, and how the per-protocol
+      target (~150 training cases) was set.
+- [ ] Methods text to match the code (see Model section) and a single top-k definition.
+- [ ] Correct author spelling (Jason vs Jaron Chong).
+- [ ] Planned, not yet run: dose-response (50/100/150 synthetic per protocol, by
+      subsampling); multiple seeds; GPT-4o zero-shot protocoling comparator (needs
+      API access outside this workspace); regeneration with local exemplars.

@@ -17,6 +17,15 @@ Schemes
                  (and in the final training set). Validation rows are never repeated.
                  CUE_K defaults to the value that restores the pre-augmentation share
                  of non-augmented labels among cue-matching training rows.
+  baseline_cw  : Experiment 3 control. Real rows only, logistic regressions with
+                 class_weight="balanced"; no synthetic data.
+  ros          : Experiment 3 control. Real rows only; inside each training fold, real
+                 rows of each of the 11 augmented protocols are resampled with
+                 replacement to add exactly as many copies as that protocol has
+                 synthetic rows (same "dose" as the GPT-4o augmentation, but no new text).
+
+LABEL_FIX=1 (default) merges the duplicate spelling "Head Angiogram or COW" into
+"Head angiogram or COW" (Experiment 3 onward). Set LABEL_FIX=0 to reproduce Exp 1-2.
 
 Out-of-fold probabilities are saved so thresholds can be set either by averaging
 per-fold thresholds (repo method) or once on pooled out-of-fold predictions.
@@ -42,9 +51,13 @@ TEXT, LABEL, SPLIT = "indication_x1", "protocol_y", "split"
 df = pd.read_excel(INPUT, sheet_name="data")
 df = df[df["exclude_record"].astype(str).str.upper() != "TRUE"].reset_index(drop=True)
 df = df[df[SPLIT].isin(["train", "test"])].reset_index(drop=True)
-df[LABEL] = df[LABEL].apply(lambda x: [i.strip() for i in str(x).split(",")])
+LABEL_FIX = os.environ.get("LABEL_FIX", "1") == "1"
+LABEL_MAP = {"Head Angiogram or COW": "Head angiogram or COW"} if LABEL_FIX else {}
+df[LABEL] = df[LABEL].apply(lambda x: sorted({LABEL_MAP.get(i.strip(), i.strip()) for i in str(x).split(",")}))
 df["synthetic"] = df["original_or_augmented"] == "augmented"
-if SCHEME == "baseline":
+# synthetic rows per protocol in the training set (the "dose" matched by the ros control)
+SYN_DOSE = pd.Series([l for ls in df[(df[SPLIT] == "train") & df["synthetic"]][LABEL] for l in ls]).value_counts().to_dict()
+if SCHEME in ("baseline", "baseline_cw", "ros"):
     df = df[~df["synthetic"]].reset_index(drop=True)
 
 train = df[df[SPLIT] == "train"].reset_index(drop=True)
@@ -62,11 +75,13 @@ model = Pipeline([
     ("clf", ClassifierChain(LogisticRegression(max_iter=2000), order="random", random_state=42)),
 ])
 
+CW = "balanced" if SCHEME == "baseline_cw" else None
+
 def fit_predict(Xa, Ya, Xb):
     p = None
     for i in range(N_CHAINS):
         m = clone(model)
-        m.set_params(clf=ClassifierChain(LogisticRegression(max_iter=2000), order="random", random_state=i))
+        m.set_params(clf=ClassifierChain(LogisticRegression(max_iter=2000, class_weight=CW), order="random", random_state=i))
         m.fit(Xa, Ya)
         q = m.predict_proba(Xb)
         p = q if p is None else p + q
@@ -87,7 +102,14 @@ if SCHEME == "aug_realval_cb":
 else:
     CUE_K = 1
 
-def with_boost(idx):  # repeat boosted rows (k-1) extra times, training rows only
+def with_boost(idx, seed=0):  # extra training rows; only ever applied to training indices
+    if SCHEME == "ros":
+        rng = np.random.default_rng(seed); extra = []
+        for j, lab in enumerate(mlb.classes_):
+            if lab in AUG and SYN_DOSE.get(lab, 0) > 0:
+                pool = idx[Y_tr[idx, j] == 1]
+                if len(pool): extra.append(rng.choice(pool, SYN_DOSE[lab], replace=True))
+        return np.concatenate([idx] + extra)
     extra = idx[boost[idx]]
     return np.concatenate([idx] + [extra] * (CUE_K - 1)) if CUE_K > 1 else idx
 
@@ -102,15 +124,15 @@ t0 = time.time()
 for r in range(N_REPEATS):
     mskf = MultilabelStratifiedKFold(n_splits=N_SPLITS, shuffle=True, random_state=r)
     for f, (a, b) in enumerate(mskf.split(fold_rows, Y_tr[fold_rows])):
-        tr_idx = with_boost(np.concatenate([fold_rows[a], always_train])); va_idx = fold_rows[b]
+        tr_idx = with_boost(np.concatenate([fold_rows[a], always_train]), seed=100 * r + f); va_idx = fold_rows[b]
         oof[r, va_idx] = fit_predict(X_tr.iloc[tr_idx], Y_tr[tr_idx], X_tr.iloc[va_idx])
         print(f"{SCHEME} repeat {r} fold {f} done {time.time()-t0:.0f}s", flush=True)
 
-full = with_boost(np.arange(len(train)))
+full = with_boost(np.arange(len(train)), seed=999)
 test_prob = fit_predict(X_tr.iloc[full], Y_tr[full], X_te)
 os.makedirs(OUT, exist_ok=True)
 TAG = SCHEME + (f"_k{CUE_K}" if SCHEME == "aug_realval_cb" else "")
-np.savez_compressed(f"{OUT}/{TAG}.npz", oof=oof, cue_k=CUE_K, boost=boost, Y_tr=Y_tr, syn=syn, test_prob=test_prob, Y_te=Y_te,
+np.savez_compressed(f"{OUT}/{TAG}.npz", oof=oof, label_fix=LABEL_FIX, syn_dose=str(SYN_DOSE), cue_k=CUE_K, boost=boost, Y_tr=Y_tr, syn=syn, test_prob=test_prob, Y_te=Y_te,
                     labels=np.array(mlb.classes_), test_text=X_te.values,
                     test_id=test["Identifier"].values)
 print("saved", f"{OUT}/{TAG}.npz", f"{time.time()-t0:.0f}s")
