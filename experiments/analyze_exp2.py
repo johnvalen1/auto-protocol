@@ -4,6 +4,7 @@ Uses the same threshold rule, paired McNemar tests and CV check as analyze.py.""
 import sys
 import numpy as np, pandas as pd
 from scipy.stats import binomtest
+from sklearn.metrics import f1_score, roc_auc_score, hamming_loss, accuracy_score
 from iterstrat.ml_stratifiers import MultilabelStratifiedKFold
 
 R, KP = sys.argv[1], int(sys.argv[2])
