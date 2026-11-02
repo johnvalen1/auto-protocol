@@ -23,6 +23,11 @@ Schemes
                  rows of each of the 11 augmented protocols are resampled with
                  replacement to add exactly as many copies as that protocol has
                  synthetic rows (same "dose" as the GPT-4o augmentation, but no new text).
+  aug_cw       : Experiment 4. aug_realval (GPT-4o synthetic rows in training folds,
+                 real-only threshold tuning) with class_weight="balanced".
+
+CHAIN_SEED (default 0) offsets the random label orders of the 3 classifier chains
+(seeds CHAIN_SEED..CHAIN_SEED+2); used for the Exp 4 seed-stability check.
 
 LABEL_FIX=1 (default) merges the duplicate spelling "Head Angiogram or COW" into
 "Head angiogram or COW" (Experiment 3 onward). Set LABEL_FIX=0 to reproduce Exp 1-2.
@@ -75,13 +80,14 @@ model = Pipeline([
     ("clf", ClassifierChain(LogisticRegression(max_iter=2000), order="random", random_state=42)),
 ])
 
-CW = "balanced" if SCHEME == "baseline_cw" else None
+CW = "balanced" if SCHEME in ("baseline_cw", "aug_cw") else None
+CHAIN_SEED = int(os.environ.get("CHAIN_SEED", 0))
 
 def fit_predict(Xa, Ya, Xb):
     p = None
     for i in range(N_CHAINS):
         m = clone(model)
-        m.set_params(clf=ClassifierChain(LogisticRegression(max_iter=2000, class_weight=CW), order="random", random_state=i))
+        m.set_params(clf=ClassifierChain(LogisticRegression(max_iter=2000, class_weight=CW), order="random", random_state=CHAIN_SEED + i))
         m.fit(Xa, Ya)
         q = m.predict_proba(Xb)
         p = q if p is None else p + q
@@ -114,7 +120,7 @@ def with_boost(idx, seed=0):  # extra training rows; only ever applied to traini
     return np.concatenate([idx] + [extra] * (CUE_K - 1)) if CUE_K > 1 else idx
 
 # which rows are split into folds / which rows are always-train
-if SCHEME in ("aug_realval", "aug_realval_cb"):
+if SCHEME in ("aug_realval", "aug_realval_cb", "aug_cw"):
     fold_rows = np.where(~syn)[0]; always_train = np.where(syn)[0]
 else:
     fold_rows = np.arange(len(train)); always_train = np.array([], dtype=int)
@@ -131,7 +137,7 @@ for r in range(N_REPEATS):
 full = with_boost(np.arange(len(train)), seed=999)
 test_prob = fit_predict(X_tr.iloc[full], Y_tr[full], X_te)
 os.makedirs(OUT, exist_ok=True)
-TAG = SCHEME + (f"_k{CUE_K}" if SCHEME == "aug_realval_cb" else "")
+TAG = SCHEME + (f"_k{CUE_K}" if SCHEME == "aug_realval_cb" else "") + (f"_seed{CHAIN_SEED}" if CHAIN_SEED else "")
 np.savez_compressed(f"{OUT}/{TAG}.npz", oof=oof, label_fix=LABEL_FIX, syn_dose=str(SYN_DOSE), cue_k=CUE_K, boost=boost, Y_tr=Y_tr, syn=syn, test_prob=test_prob, Y_te=Y_te,
                     labels=np.array(mlb.classes_), test_text=X_te.values,
                     test_id=test["Identifier"].values)

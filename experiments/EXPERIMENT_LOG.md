@@ -213,6 +213,64 @@ must be pre-registered as Exp 4 before running.
 
 ---
 
+## Exp 4 — Combined augmentation + class weighting; final model selection (pre-registered 2026-11-02 12:25 CT)
+
+**Rationale (from Exp 3):** GPT-4o augmentation and class weighting improved different
+protocols — synthetic text helped protocols with almost no real data (Sinus NC, L Spine
+C+, C Spine C+), class weighting helped those with some real data (T Spine NC, Orbits
+NC, Neck Angiogram). Their combination is the remaining untested candidate. Exp 4 is
+also the **final model-selection step**: no new data are available for temporal or
+external validation, so the configuration the paper is built on is chosen by a rule
+fixed here, using cross-validation only.
+
+**New condition:** `aug_cw` — GPT-4o synthetic rows in every training fold, thresholds
+tuned on real rows only (as Exp 1), logistic regressions with `class_weight="balanced"`.
+
+**Candidates for selection** (all with real-only threshold tuning, 21 classes):
+baseline; class weighting; random oversampling; GPT-4o aug; GPT-4o aug + class
+weighting; GPT-4o aug + counterbalance (k = 7). Excluded a priori: GPT-4o aug with the
+repo's original tuning, because its thresholds are tuned on synthetic rows (Exp 1).
+
+**Selection metrics** — CV on real training rows, 5 repeats × 4 folds, each fold's
+thresholds tuned on the other three folds, pooled over all folds and repeats:
+- S_aug: pooled sensitivity over the 11 augmented protocols
+- S_non: pooled sensitivity over the 10 non-augmented protocols
+- P_micro: micro-averaged precision over all 21 protocols
+- macro F1
+
+**Selection rule**
+1. Eligible if S_non ≥ baseline S_non − 1.0 point **and** P_micro ≥ baseline
+   P_micro − 1.0 point. (The precision condition guards against buying sensitivity by
+   advising more protocols, a pattern seen with class weighting in Exp 3.)
+2. Among eligible candidates, select the highest S_aug.
+3. If the runner-up's S_aug is within 1.0 point of the leader, select whichever of the
+   two has the higher CV macro F1.
+4. If no augmented candidate is eligible, the paper reports that and baseline is the
+   reference model.
+
+**Safeguards**
+- Two-stage analysis. Stage 1 (`analyze_exp4_select.py`) reads only cross-validation
+  outputs and never loads test predictions; the selection is committed to this log
+  before Stage 2 (`analyze_exp4_test.py`) computes any test metric.
+- Seed stability (after selection, before Stage 2): the selected configuration and
+  baseline are rerun with classifier-chain seeds 10–12 and 20–22. Reported as a
+  range; not used for selection.
+- Test reporting (Stage 2): primary = selected vs baseline on pooled augmented-protocol
+  sensitivity (McNemar on paired case–protocol outcomes; 2,000-resample case-level
+  bootstrap CI). Selected vs every other candidate reported with Holm correction.
+  Non-augmented pooled sensitivity as secondary. All candidates shown in full.
+- No further conditions will be added for the paper's main analysis after this point
+  without a new pre-registered entry.
+
+**Disclosure for the paper:** no independent hold-out set exists. The test set was
+examined during Exps 0–3, including six Head C+ test referrals inspected during the
+Exp 1 diagnosis, and test results for five of the six candidates were seen before
+this entry. Exp 4 adds one new condition, and selection uses cross-validation only.
+
+**Results:** _(Stage 1 selection, then seed check, then Stage 2 test results, in that order)_
+
+---
+
 ## Open items for the paper (not experiments)
 
 - [ ] Radiologist verification of synthetic rows: number reviewed, number accepted /
