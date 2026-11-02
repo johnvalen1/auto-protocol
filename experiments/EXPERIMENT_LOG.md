@@ -162,7 +162,54 @@ thresholds for each fold tuned on the other folds).
   claim is narrowed accordingly.
 - No condition is added, dropped or re-tuned after test results are seen.
 
-**Results:** _(to be filled in after the run)_
+**Results (run 2026-11-01; 21 classes after label fix; results file `exp3_results.xlsx`)**
+
+Primary endpoint — pooled sensitivity, 11 augmented protocols (188 test pairs):
+
+| Comparison | GPT-4o aug | Comparator | Difference (95% CI) | Gained / lost | Holm p |
+|---|---|---|---|---|---|
+| vs baseline | 41.0% | 22.3% | +18.6 pts (+12.3 to +25.3) | 41 / 6 | < 0.001 |
+| vs random oversampling | 41.0% | 29.8% | +11.2 pts (+4.2 to +18.0) | 33 / 12 | 0.005 |
+| vs class weighting | 41.0% | 35.1% | +5.9 pts (−1.6 to +13.0) | 30 / 19 | 0.15 |
+
+CV primary endpoint (real training rows): baseline 32.6%, oversampling 36.0%,
+class weighting **46.4%**, GPT-4o aug 44.7%.
+
+**Decision rule: not met.** GPT-4o augmentation beats random oversampling of real
+minority rows on test and in CV, but does not beat class weighting (test difference
+not significant; CV favours class weighting). Per the pre-registered rule, the claim
+is narrowed: LLM augmentation is better than duplicating real minority examples, and
+comparable to class weighting on minority sensitivity.
+
+Secondary — pooled sensitivity, 10 non-augmented protocols (1,040 test pairs):
+GPT-4o aug 75.1% vs baseline 74.1% (+1.0 pts, 95% CI −0.2 to +2.1, p = 0.46 Holm);
+no comparison showed a significant difference. CV: 76.6% vs 76.0%.
+
+Secondary — global test metrics (baseline / class weighting / oversampling / GPT-4o aug):
+macro F1 0.387 / 0.442 / 0.430 / **0.512**; micro F1 0.630 / 0.635 / 0.649 / **0.669**;
+subset accuracy 0.487 / 0.451 / 0.491 / **0.517**; macro AUC 0.905 / 0.898 / 0.905 /
+**0.933**; Hamming loss 0.045 / 0.046 / 0.043 / **0.040**; top-3 0.853 / 0.863 / 0.867 /
+**0.901**; mean protocols advised 1.35 / 1.43 / 1.38 / 1.34.
+
+**Observations (descriptive, not pre-registered):**
+- The two methods help different protocols. GPT-4o is the only method that learns
+  protocols with almost no real examples: Sinus NC (3 real training cases) 0% → 71%
+  test / 0% → 100% CV, where class weighting stays at 0%; L Spine C+ and C Spine C+
+  also favour GPT-4o in test. Class weighting does better where real examples exist
+  (T Spine NC, Orbits NC, Neck Angiogram, Head & Neck Angio).
+- Class weighting raises minority sensitivity by advising more protocols (1.43 per
+  case) at the cost of precision: lowest subset accuracy and macro AUC of all
+  conditions, and CV Head NC 85.8% → 81.8%. GPT-4o improves the precision-aware
+  metrics (F1, AUC, Hamming) as well as sensitivity.
+- Head C+ (test, 70 cases): baseline 54.3%, GPT-4o real-only 48.6% (4 lost, p = 0.13),
+  counterbalanced 55.7%; CV 47.2% / 42.4% / 44.9%. Residual Head C+ cost persists.
+- Label fix changed headline numbers slightly: baseline top-3 85.3% (was 87.6%),
+  GPT-4o 90.1% (was 91.7%).
+
+**Implication / next step:** the methods appear complementary (synthetic text for
+protocols with ~no real data; reweighting for protocols with some). A combined
+condition (GPT-4o augmentation + class weighting) is the natural next experiment and
+must be pre-registered as Exp 4 before running.
 
 ---
 
