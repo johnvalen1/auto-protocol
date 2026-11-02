@@ -11,6 +11,12 @@ Schemes
                  tuned partly on synthetic validation rows (as in autoprotocol_with_augments.py)
   aug_realval  : CV folds drawn over REAL rows only; every synthetic row is added
                  to every training fold; thresholds tuned on real validation rows only
+  aug_realval_cb : aug_realval plus counterbalancing (Experiment 2). Real training rows
+                 whose indication matches CUE_REGEX and that carry at least one
+                 non-augmented protocol are repeated CUE_K times in each training fold
+                 (and in the final training set). Validation rows are never repeated.
+                 CUE_K defaults to the value that restores the pre-augmentation share
+                 of non-augmented labels among cue-matching training rows.
 
 Out-of-fold probabilities are saved so thresholds can be set either by averaging
 per-fold thresholds (repo method) or once on pooled out-of-fold predictions.
@@ -66,8 +72,27 @@ def fit_predict(Xa, Ya, Xb):
         p = q if p is None else p + q
     return p / N_CHAINS
 
+AUG = ['T Spine NC', 'Facial Bones C+', 'Orbits C+', 'Neck NC', 'Orbits NC', 'Temporal Bones NC',
+       'Neck Angiogram', 'Temporal Bones C+', 'C Spine C+', 'L Spine C+', 'Sinus NC']
+CUE_REGEX = os.environ.get("CUE_REGEX", r"mastoid|infect|drainage")
+cue = X_tr.str.contains(CUE_REGEX, case=False, regex=True).values
+nonaug = train[LABEL].map(lambda l: any(x not in AUG for x in l)).values
+boost = cue & nonaug & ~syn
+if SCHEME == "aug_realval_cb":
+    n_na, n_a, n_s = boost.sum(), (cue & ~nonaug & ~syn).sum(), (cue & syn).sum()
+    s0 = n_na / (n_na + n_a)
+    k_formula = s0 * (n_a + n_s) / (n_na * (1 - s0))
+    CUE_K = int(round(float(os.environ.get("CUE_K", k_formula))))
+    print(f"cue rows: real non-aug {n_na}, real aug-only {n_a}, synthetic {n_s}; k_formula={k_formula:.2f}; using k={CUE_K}", flush=True)
+else:
+    CUE_K = 1
+
+def with_boost(idx):  # repeat boosted rows (k-1) extra times, training rows only
+    extra = idx[boost[idx]]
+    return np.concatenate([idx] + [extra] * (CUE_K - 1)) if CUE_K > 1 else idx
+
 # which rows are split into folds / which rows are always-train
-if SCHEME == "aug_realval":
+if SCHEME in ("aug_realval", "aug_realval_cb"):
     fold_rows = np.where(~syn)[0]; always_train = np.where(syn)[0]
 else:
     fold_rows = np.arange(len(train)); always_train = np.array([], dtype=int)
@@ -77,13 +102,15 @@ t0 = time.time()
 for r in range(N_REPEATS):
     mskf = MultilabelStratifiedKFold(n_splits=N_SPLITS, shuffle=True, random_state=r)
     for f, (a, b) in enumerate(mskf.split(fold_rows, Y_tr[fold_rows])):
-        tr_idx = np.concatenate([fold_rows[a], always_train]); va_idx = fold_rows[b]
+        tr_idx = with_boost(np.concatenate([fold_rows[a], always_train])); va_idx = fold_rows[b]
         oof[r, va_idx] = fit_predict(X_tr.iloc[tr_idx], Y_tr[tr_idx], X_tr.iloc[va_idx])
         print(f"{SCHEME} repeat {r} fold {f} done {time.time()-t0:.0f}s", flush=True)
 
-test_prob = fit_predict(X_tr, Y_tr, X_te)
+full = with_boost(np.arange(len(train)))
+test_prob = fit_predict(X_tr.iloc[full], Y_tr[full], X_te)
 os.makedirs(OUT, exist_ok=True)
-np.savez_compressed(f"{OUT}/{SCHEME}.npz", oof=oof, Y_tr=Y_tr, syn=syn, test_prob=test_prob, Y_te=Y_te,
+TAG = SCHEME + (f"_k{CUE_K}" if SCHEME == "aug_realval_cb" else "")
+np.savez_compressed(f"{OUT}/{TAG}.npz", oof=oof, cue_k=CUE_K, boost=boost, Y_tr=Y_tr, syn=syn, test_prob=test_prob, Y_te=Y_te,
                     labels=np.array(mlb.classes_), test_text=X_te.values,
                     test_id=test["Identifier"].values)
-print("saved", f"{OUT}/{SCHEME}.npz", f"{time.time()-t0:.0f}s")
+print("saved", f"{OUT}/{TAG}.npz", f"{time.time()-t0:.0f}s")
