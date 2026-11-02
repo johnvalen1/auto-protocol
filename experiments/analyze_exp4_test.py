@@ -5,11 +5,14 @@ import sys, json, glob, os
 import numpy as np, pandas as pd
 from scipy.stats import binomtest
 from sklearn.metrics import f1_score, roc_auc_score, hamming_loss, accuracy_score
+from iterstrat.ml_stratifiers import MultilabelStratifiedKFold
 
 R, MODE = sys.argv[1], sys.argv[2]
 here = os.path.dirname(os.path.abspath(__file__))
 sel_src = open(f"{here}/analyze_exp4_select.py").read()
-exec(sel_src[sel_src.index("R = sys.argv[1]"):sel_src.index("rows, sds = {}")])  # CVOnly, folds, cv_counts, metrics, Z, labels, A
+block = sel_src[sel_src.index("R = sys.argv[1]"):sel_src.index("rows, sds = {}")]
+block = block.replace('__file__.replace("analyze_exp4_select.py", "analyze.py")', f'"{here}/analyze.py"')
+exec(block)  # CVOnly, folds, cv_counts, metrics, Z, labels, A
 SEL = json.load(open(f"{R}/exp4_selected.json")); S, SF = SEL["selected"], SEL["file"]
 pd.set_option("display.width", 250)
 

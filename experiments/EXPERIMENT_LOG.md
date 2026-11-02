@@ -289,7 +289,17 @@ loses 2.6 points of micro precision versus baseline, as does class weighting (�
 both buy sensitivity by advising more protocols. They are reported in the paper as
 alternatives favouring sensitivity over precision.
 
-**Seed check:** _(pending)_
+**Seed check (CV only; recorded before Stage 2):** chain seeds 0–2, 10–12, 20–22.
+
+| Config | S_aug range | S_non range | P_micro range | Macro F1 range |
+|---|---|---|---|---|
+| baseline | 32.6–36.6% | 75.9–76.4% | 67.5–67.9% | 0.400–0.402 |
+| GPT-4o aug | 44.0–45.7% | 75.9–76.6% | 67.5–67.8% | 0.476–0.482 |
+
+The selected configuration's advantage on minority sensitivity holds for every seed
+set (smallest gap 7.4 points), with no change in non-augmented sensitivity or precision.
+(Two script bugs in `analyze_exp4_test.py`, a file-path and a missing import, were
+fixed before this ran; no results were produced by the failed attempts.)
 
 **Stage 2 — test results:** _(pending)_
 
