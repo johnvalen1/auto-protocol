@@ -301,7 +301,49 @@ set (smallest gap 7.4 points), with no change in non-augmented sensitivity or pr
 (Two script bugs in `analyze_exp4_test.py`, a file-path and a missing import, were
 fixed before this ran; no results were produced by the failed attempts.)
 
-**Stage 2 — test results:** _(pending)_
+**Stage 2 — test results (1,001 real test cases; results file `exp4_results.xlsx`)**
+
+Primary — selected (GPT-4o aug) vs baseline, pooled sensitivity over the 11 augmented
+protocols (188 case–protocol pairs): **22.3% → 41.0%, +18.6 points (95% CI +12.3 to
++25.3), 41 gained / 6 lost, McNemar p < 0.001.**
+
+Selected vs every candidate (Holm-adjusted):
+
+| Comparator | Augmented-protocol sensitivity: selected vs comparator | Holm p | Non-augmented sensitivity: selected vs comparator | Holm p |
+|---|---|---|---|---|
+| baseline | 41.0 vs 22.3% | < 0.001 | 75.1 vs 74.1% | 0.62 |
+| class weighting | 41.0 vs 35.1% | 0.30 | 75.1 vs 74.7% | 1.0 |
+| random oversampling | 41.0 vs 29.8% | 0.010 | 75.1 vs 75.9% | 0.77 |
+| GPT-4o aug + class weighting | 41.0 vs **48.9%** | **0.032** | 75.1 vs 75.4% | 1.0 |
+| GPT-4o aug + counterbalance | 41.0 vs 39.9% | 0.69 | 75.1 vs **76.4%** | **0.022** |
+
+Test, all candidates (S_aug / S_non / micro precision / macro F1 / top-3):
+baseline 22.3 / 74.1 / 60.1 / 0.387 / 85.3; class weighting 35.1 / 74.7 / 59.0 / 0.442 /
+86.3; oversampling 29.8 / 75.9 / 61.4 / 0.430 / 86.7; **GPT-4o aug 41.0 / 75.1 / 64.2 /
+0.512 / 90.1**; GPT-4o aug + CW 48.9 / 75.4 / 63.2 / 0.540 / 89.6; GPT-4o aug +
+counterbalance 39.9 / 76.4 / 64.0 / 0.511 / 89.9.
+
+Seed check, test (seeds 0–2 / 10–12 / 20–22): baseline S_aug 22.3 / 25.0 / 22.3%;
+GPT-4o aug 41.0 / 44.7 / 43.1%. Macro F1 baseline 0.386–0.406, GPT-4o aug 0.512–0.534.
+
+**Interpretation**
+- The selected configuration's primary result is large, significant, and stable across
+  seeds, with no detectable loss on the non-augmented protocols.
+- **On the test set, GPT-4o aug + class weighting outperformed the selected
+  configuration** on minority sensitivity (+7.9 points, Holm p = 0.032) and macro F1,
+  and its test precision (63.2%) was above baseline. In CV it lost 2.6 points of
+  precision versus baseline, which made it ineligible under the pre-registered rule.
+  The selection stands: switching to it now would be choosing the model on the test
+  set. The paper reports it as a secondary finding and a candidate for prospective
+  evaluation, with both the CV and test numbers.
+- Counterbalancing gave slightly higher non-augmented sensitivity on test (+1.3 points,
+  Holm p = 0.022) with similar minority sensitivity; also reported as secondary.
+- Per-protocol: Sinus NC 0 → 71%, Temporal Bones C+ 12 → 41%, Facial Bones C+ 35 → 53%,
+  L Spine C+ 0 → 18%; Head C+ 54 → 49% remains the one notable non-augmented decrease;
+  Neck Angiogram 0% in both.
+
+**Conclusion for the paper:** main model = GPT-4o augmentation with real-only threshold
+tuning, chosen by the pre-registered CV rule.
 
 ---
 
