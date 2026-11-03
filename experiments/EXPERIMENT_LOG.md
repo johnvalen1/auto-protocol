@@ -399,7 +399,31 @@ per-protocol sensitivity (Holm across 20); precision, exact match, complete-matc
 top-3, F1, AUC, Hamming loss, advised per case; cross-validation estimates; everything
 repeated on the secondary test set (ambiguous included).
 
-**Results:** _(to be filled in after the run)_
+**Results (run 2026-11-02; `final_results.xlsx`)**
+
+Primary test set (956 studies, ambiguous excluded):
+- **Primary:** rare-protocol sensitivity 45/152 (29.6%) → 76/152 (50.0%); +20.4 points
+  (95% CI 11.8 to 29.1); 41 gained / 10 lost; McNemar P < .001.
+- **No-cost check:** common-protocol sensitivity 761/1,000 (76.1%) → 776/1,000 (77.6%);
+  +1.5 points (95% CI −0.3 to 3.3); lower bound above −2.0 → **criterion met**.
+- Secondary, rare protocols (Holm): GPT-4o vs baseline +15.1 (68 vs 45/152, P < .001);
+  class weighting vs baseline +11.2 (62 vs 45, P = .002); GPT-4o + CW vs class weighting
+  +9.2 (76 vs 62, 95% CI 0.7 to 17.6, P = .039) — GPT-4o adds beyond class weighting.
+- Secondary, common protocols (Holm): GPT-4o +0.1 (P = 1.0); class weighting +2.1
+  (P = .056); GPT-4o + CW vs CW −0.6 (P = .69).
+- Precision 806/1,265 (63.7%) → 852/1,348 (63.2%); advised per case 1.32 → 1.41;
+  exact match 498 → 477; all reference protocols advised 641 → 689; top-3 842 → 862;
+  macro F1 0.437 → 0.544; weighted F1 0.658 → 0.698; macro AUC 0.922 → 0.932.
+- Per protocol (Holm across 20): Sinus NC 0 → 13/17 (P = .005); TIA 150 → 160/184
+  (P = .037); Temporal Bones C+ 2 → 11/17 (unadjusted .004, adjusted .070).
+  Largest decrease: Head NC 394 → 383/476 (22 lost, 11 gained; unadjusted P = .080).
+  Neck Angiogram 0/13 in both.
+
+Secondary test set (984, ambiguous included): rare 47/168 → 85/168 (+22.6, 95% CI
+14.4 to 31.0); common 771/1,024 → 787/1,024 (+1.6, 95% CI −0.2 to 3.4).
+
+CV (real training rows): rare 41.1% → 55.4%; common 76.0% → 76.9%; precision
+68.6% → 65.6%.
 
 ---
 
