@@ -347,6 +347,62 @@ tuning, chosen by the pre-registered CV rule.
 
 ---
 
+## Final analysis — four-arm study for the paper (pre-registered 2026-11-02 18:50 CT)
+
+**Decision by the authors (2026-11-02):** the paper will use a simplified, pre-specified
+four-arm design. Exps 1–4 are preliminary development on an earlier version of this
+dataset (same test cases); the paper discloses that in one sentence. Code:
+`final_four_arm.py`, `analyze_final.py`.
+
+**Data decisions and reasons**
+- Base data = V7 (its split, exclusions and the 1,227 GPT-4o synthetic indications used
+  for the ARRS submission).
+- Ambiguous studies: the V8 column `exclude_record_based_on_anatomical_ambiguity` flags
+  344 real studies whose indication was judged too vague to protocol, by a radiologist
+  reading the indication only, before any model errors were seen. 333 are in the V7
+  cohort (288 train, 45 test). They are removed from training and from the primary test
+  set; the reference label for these studies is unreliable.
+- "Head Angiogram or COW" merged into "Head angiogram or COW" (same protocol, two
+  spellings).
+- Neck NC removed: 67 of its 69 real studies are flagged ambiguous; 2 remain, both in
+  training, none in test, so it could not be evaluated and would be learned almost
+  entirely from synthetic text. Its 103 synthetic rows are removed too.
+- Neck Angiogram kept (authors' decision, to avoid dropping protocols).
+- C Spine C+ (13 real studies left) and L Spine C+ (18) fall below the 20-case cohort
+  rule after ambiguous removal; kept, because the rule was applied when the cohort was
+  defined, before ambiguous removal.
+- Fixed synthetic dose: every augmented protocol is brought to the same total of real +
+  synthetic training cases, = the largest total all can reach from the V7 synthetic
+  rows: **103** (limited by T Spine NC: 66 real + 37 synthetic). 103 is below the
+  smallest non-augmented protocol (Head Venogram, 157), so the frequency order of common
+  protocols is preserved. Synthetic rows subsampled without replacement, seed 42:
+  701 of 1,227 used.
+- Result: 20 protocols (10 augmented), 7,505 real training studies, 956 primary test
+  studies. Secondary test set = primary + 28 ambiguous test studies = 984 (the other 17
+  ambiguous test studies were Neck NC and are excluded with that protocol).
+
+**Arms** (same model, 5 × 4-fold CV over real training rows, thresholds tuned on real
+rows only, 1–3 advised protocols): baseline; class weighting; GPT-4o augmentation;
+GPT-4o augmentation + class weighting.
+
+**Primary comparison:** GPT-4o augmentation + class weighting vs baseline, pooled
+sensitivity over the 10 augmented protocols, primary test set. Exact McNemar on
+case–protocol pairs; 95% CI by 2,000-resample case bootstrap (seed 42).
+
+**No-cost check:** pooled sensitivity over the 10 common protocols, same comparison;
+criterion = lower 95% CI bound above −2.0 percentage points. The difference and CI are
+reported in full so the definition can be revisited.
+
+**Secondary:** GPT-4o vs baseline, class weighting vs baseline, GPT-4o + class
+weighting vs class weighting (Holm across the three), for rare and common protocols;
+per-protocol sensitivity (Holm across 20); precision, exact match, complete-match recall,
+top-3, F1, AUC, Hamming loss, advised per case; cross-validation estimates; everything
+repeated on the secondary test set (ambiguous included).
+
+**Results:** _(to be filled in after the run)_
+
+---
+
 ## Open items for the paper (not experiments)
 
 - [ ] Radiologist verification of synthetic rows: number reviewed, number accepted /
