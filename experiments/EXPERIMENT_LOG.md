@@ -449,7 +449,27 @@ only the rule that turns probabilities into advised protocols changes. Code:
 (McNemar, case bootstrap CI), precision, exact match, complete-match recall, F1, Hamming
 loss, advised per case, and per-protocol sensitivity under top-2.
 
-**Results:** _(to be filled in after the run)_
+**Results (run 2026-11-05; `operating_points.xlsx`), primary test set (956)**
+- CV-calibrated threshold factors for ~2.0 advised: baseline 0.39, class weighting
+  0.50, GPT-4o 0.37, GPT-4o + CW 0.51. Test advised per case 2.05–2.07.
+- Scaled thresholds, ~2 advised: rare sensitivity baseline 38/152 (25.0%), class
+  weighting 77 (50.7%), GPT-4o 84 (55.3%), GPT-4o + CW 96 (63.2%). GPT-4o vs baseline
+  +30.3 points (95% CI 22.8 to 38.6; 48 gained / 2 lost); common +0.1 (−1.0 to 1.1).
+  GPT-4o + CW vs baseline +38.2 (29.8 to 46.7); common −1.9 (−3.6 to −0.3), lower bound
+  below −2: would fail the no-cost criterion at this operating point.
+- Precision falls for every arm (baseline 63.7% → 46.6%; GPT-4o 67.3% → 48.8%); exact
+  match falls (baseline 498 → 285; GPT-4o 537 → 295); complete-match recall rises
+  (baseline 641 → 743; GPT-4o 666 → 784). Macro F1 falls (baseline 0.437 → 0.381;
+  GPT-4o 0.533 → 0.515) but the gap between them widens (0.096 → 0.134).
+- Why the gain grows: baseline puts its extra suggestions almost entirely on common
+  protocols (rare labels advised 105 → 118; common 1,160 → 1,846), so its rare
+  sensitivity does not rise. GPT-4o puts many on rare protocols (122 → 191).
+- Top-2 (fixed): rare baseline 21/152, GPT-4o 63, GPT-4o + CW 87; exact match collapses
+  (75–93 of 956) because ~82% of cases have one reference protocol. Forcing exactly two
+  also lowers baseline rare sensitivity below its current value, which exaggerates the
+  gain; scaled thresholds are the fairer version of this analysis.
+- Ambiguous-included test set: same pattern (GPT-4o vs baseline at ~2: +31.6 rare,
+  +0.1 common).
 
 ---
 

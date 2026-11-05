@@ -4,6 +4,7 @@ import sys, json
 import numpy as np, pandas as pd
 from scipy.stats import binomtest
 from sklearn.metrics import f1_score, hamming_loss
+from iterstrat.ml_stratifiers import MultilabelStratifiedKFold
 
 R = sys.argv[1]
 src = open(__file__.replace("analyze_operating_points.py", "analyze_final.py")).read()
