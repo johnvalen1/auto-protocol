@@ -427,6 +427,32 @@ CV (real training rows): rare 41.1% → 55.4%; common 76.0% → 76.9%; precision
 
 ---
 
+## Secondary operating-point analysis (added 2026-11-05, after the final results were seen)
+
+**Rationale:** the authors asked whether advising about 2 protocols per case instead
+of ~1.4 enlarges the gain from augmentation. This is a post-hoc secondary analysis;
+the pre-specified final results above remain the main results. No model is retrained:
+only the rule that turns probabilities into advised protocols changes. Code:
+`analyze_operating_points.py`.
+
+**Rules, applied identically to all four arms, both test sets:**
+- (a) Top-2 (main version of this analysis): advise exactly the 2 most probable
+  protocols. Nothing is tuned.
+- (b) Scaled thresholds: multiply every protocol threshold by one factor, chosen on
+  cross-validation (real training rows, out-of-fold probabilities) so the mean number
+  advised is about 2.0; 1–3 protocols per case as before. Factor set per arm without
+  looking at the test set.
+- Curve: (b) repeated for CV-calibrated targets of 1.25 to 2.75 advised per case, plus
+  fixed top-1, top-2, top-3.
+
+**Reported:** rare and common pooled sensitivity with paired comparisons vs baseline
+(McNemar, case bootstrap CI), precision, exact match, complete-match recall, F1, Hamming
+loss, advised per case, and per-protocol sensitivity under top-2.
+
+**Results:** _(to be filled in after the run)_
+
+---
+
 ## Open items for the paper (not experiments)
 
 - [ ] Radiologist verification of synthetic rows: number reviewed, number accepted /
