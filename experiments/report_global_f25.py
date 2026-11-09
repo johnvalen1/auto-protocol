@@ -1,7 +1,8 @@
 """Final operating rule: per-protocol thresholds maximise F1 (averaged over 20 CV folds),
 then ONE lowering factor per model maximises micro F2.5 over all suggestions in
 training-data CV (each fold's thresholds from the other folds). Baseline vs GPT-4o.
-Test set: 984 studies (V7 test set, ambiguous indications included, Neck NC removed).
+Test set: 984 studies (V7 test set, ambiguous indications included, Neck NC removed);
+EXCLUDE_AMBIG_TEST=1 evaluates on the 956 studies without ambiguous indications.
 usage: python report_global_f25.py <final_out_dir>"""
 import sys, json
 import numpy as np, pandas as pd
@@ -58,8 +59,12 @@ for a, z in Z.items():
     TH[a] = np.mean([tune_f1(Yt[v], oof[r][v]) for r in range(oof.shape[0]) for v in folds(z, r)], axis=0) * FACTOR[a]
 print("factors chosen on CV (micro F2.5):", FACTOR)
 
-Y = Z["baseline"]["Y_te"]  # all 984 test studies
-P = {a: apply(Z[a]["test_prob"], TH[a]) for a in Z}; PR = {a: Z[a]["test_prob"] for a in Z}
+import os
+KEEP = ~Z["baseline"]["ambiguous"] if os.environ.get("EXCLUDE_AMBIG_TEST") == "1" else np.ones(len(Z["baseline"]["ambiguous"]), bool)
+TAG = "_ambiguous_excluded" if os.environ.get("EXCLUDE_AMBIG_TEST") == "1" else ""
+Y = Z["baseline"]["Y_te"][KEEP]  # 984 test studies, or 956 with EXCLUDE_AMBIG_TEST=1
+P = {a: apply(Z[a]["test_prob"], TH[a])[KEEP] for a in Z}; PR = {a: Z[a]["test_prob"][KEEP] for a in Z}
+print("test studies:", len(Y))
 t3 = lambda pr: np.array([len(set(np.argsort(q)[-3:]) & set(np.where(t)[0])) > 0 for q, t in zip(pr, Y)])
 auc = lambda y, p: roc_auc_score(y[:, y.sum(0) > 0], p[:, y.sum(0) > 0], average="macro")
 def boot(fn, PA, PB, n=2000):
@@ -99,11 +104,11 @@ PP = pd.DataFrame(pp); PP["holm_p"] = holm(PP.mcnemar_p); PP = PP.sort_values(["
 pd.set_option("display.width", 260)
 print(G.round(4).to_string(index=False))
 print(PP[["protocol", "test_cases", "Baseline correct", "GPT-4o augmentation correct", "Baseline precision", "GPT-4o augmentation precision", "gained", "lost", "mcnemar_p", "holm_p"]].round(3).to_string(index=False))
-with pd.ExcelWriter(f"{R}/final_global_f25_results.xlsx") as w:
+with pd.ExcelWriter(f"{R}/final_global_f25_results{TAG}.xlsx") as w:
     pd.DataFrame({"Item": ["Rule", "Factors (CV)", "Test set", "Tests"], "Detail": [
         "Per-protocol thresholds maximise F1 (mean of 20 CV folds); one factor per model, chosen in training-data CV to maximise micro F2.5, multiplies all thresholds; 1-3 suggestions per case",
-        json.dumps(FACTOR), "984 V7 test studies, ambiguous indications included (Neck NC removed)",
+        json.dumps(FACTOR), f"{len(Y)} V7 test studies (Neck NC removed){', ambiguous indications excluded' if TAG else ', ambiguous indications included'}",
         "Exact McNemar for sensitivities and case-level metrics; case bootstrap (2,000 resamples, seed 42) for precision, F1, AUC, Hamming; Holm across 20 protocols"]}).to_excel(w, sheet_name="About", index=False)
     G.to_excel(w, sheet_name="Global", index=False); PP.to_excel(w, sheet_name="Per protocol", index=False)
-json.dump(dict(factors=FACTOR, global_=G.to_dict("records"), perprot=PP.to_dict("records")), open(f"{R}/final_global_f25.json", "w"), default=float)
-print("saved", f"{R}/final_global_f25_results.xlsx")
+json.dump(dict(factors=FACTOR, global_=G.to_dict("records"), perprot=PP.to_dict("records")), open(f"{R}/final_global_f25{TAG}.json", "w"), default=float)
+print("saved", f"{R}/final_global_f25_results{TAG}.xlsx")

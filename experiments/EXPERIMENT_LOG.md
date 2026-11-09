@@ -547,3 +547,10 @@ and 7 because their real counts already exceed or approach 103).
 Training on ambiguous studies helps baseline slightly (rare 39 → 43, exact match +1.9) but
 not the augmented model's rare-protocol gain. At 144, the augmented model loses
 significantly on common protocols (Head and Neck Angiogram 29 → 22, Head C+ 55 → 51).
+
+**Final rule on the 956-study test set, ambiguous excluded from training and test
+(2026-11-09, `EXCLUDE_AMBIG_TEST=1 report_global_f25.py`).** Same models and factors
+(0.38 / 0.40); 2.07 / 2.02 suggestions per case. Rare 38/152 → 85/152 (+30.9 points,
+95% CI 23.5 to 39.1, P < .001); common 880/1,000 → 870/1,000 (−1.0, −2.2 to 0.0, P = .12);
+exact match 29.2% → 32.8% (P < .001); precision 46.3% → 49.5%; macro F1 0.381 → 0.520;
+macro AUC 0.922 → 0.946. Holm-significant: Sinus NC 0 → 14/17, Temporal Bones C+ 1 → 12/17.
