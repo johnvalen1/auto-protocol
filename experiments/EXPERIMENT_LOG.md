@@ -473,7 +473,27 @@ loss, advised per case, and per-protocol sensitivity under top-2.
 
 ---
 
-## Open items for the paper (not experiments)
+## F-beta threshold tuning, CV-only check (2026-11-09)
+
+**Rationale:** the authors want about two suggestions per case to arise from the
+threshold-tuning objective rather than from a target. Per-protocol thresholds were
+tuned to maximise F-beta (beta > 1 weights a missed protocol more than an extra
+suggestion) instead of F1. Baseline and GPT-4o augmentation only. Training-data
+cross-validation only (thresholds for each fold tuned on the other folds); the test set
+was not read (`fbeta_cv_check.py` blocks test arrays).
+
+| Rule | Baseline: per case / rare / common / precision | GPT-4o: per case / rare / common / precision | Rare gain |
+|---|---|---|---|
+| F1 (current default) | 1.29 / 41.1% / 76.0% / 68.6% | 1.27 / 48.1% / 76.2% / 69.9% | +7.0 |
+| F1.5 | 1.65 / 39.9% / 83.1% / 58.5% | 1.63 / 55.4% / 82.6% / 59.0% | +15.5 |
+| **F2** | 1.85 / 36.9% / 86.7% / 54.2% | 1.87 / 55.0% / 86.5% / 53.9% | +18.1 |
+| F2.5 | 2.07 / 36.8% / 89.4% / 50.0% | 2.10 / 53.3% / 89.3% / 49.5% | +16.5 |
+| F3 | 2.18 / 36.2% / 90.3% / 47.8% | 2.20 / 53.9% / 90.2% / 47.7% | +17.7 |
+| Uniform scaling (×0.39 / ×0.37) | 2.01 / 40.7% / 87.7% / 50.4% | 2.01 / 57.4% / 87.6% / 50.9% | +16.7 |
+
+True protocols per real training case: 1.18. F2 reaches ~1.85 suggestions per case with
+a rare-protocol gain similar to uniform scaling and higher precision. Not yet run on
+the test set; the authors choose the metric first.
 
 - [ ] Radiologist verification of synthetic rows: number reviewed, number accepted /
       edited / rejected, reviewer, criteria.
