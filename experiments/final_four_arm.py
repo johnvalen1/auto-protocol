@@ -73,12 +73,12 @@ if os.environ.get("TARGET"): TARGET = int(os.environ["TARGET"])  # override the 
 rng = np.random.default_rng(42); keep = []
 for p in AUG:
     rows = np.where(syn_pool[LABEL].map(lambda l: l == [p]))[0]
-    need = TARGET - real_n[p]; assert 0 <= need <= len(rows), p
+    need = max(0, TARGET - real_n[p]); assert need <= len(rows), p  # protocols already above TARGET get no synthetic rows
     keep += list(rng.choice(rows, need, replace=False))
 syn_used = syn_pool.iloc[sorted(keep)].reset_index(drop=True)
 summary.update(ambiguous_in_training=AMB_TRAIN, target_total=TARGET, limiting=min(AUG, key=lambda p: real_n[p] + syn_n[p]),
                real_train_per_aug=real_n, synthetic_available=syn_n,
-               synthetic_used={p: TARGET - real_n[p] for p in AUG}, synthetic_used_total=len(syn_used),
+               synthetic_used={p: max(0, TARGET - real_n[p]) for p in AUG}, synthetic_used_total=len(syn_used),
                train_real=len(train_real), test_primary=int((~test_all.ambiguous).sum()),
                test_ambiguous=int(test_all.ambiguous.sum()))
 
