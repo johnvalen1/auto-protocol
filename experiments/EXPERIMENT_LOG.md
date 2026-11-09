@@ -530,3 +530,20 @@ Rare sensitivity 39/168 → 93/168 (+32.1 points, 95% CI 24.7 to 40.1, P < .001)
 894/1,024 → 884/1,024 (−1.0, −2.1 to 0.1, P = .12); exact match +3.6 (P < .001);
 precision +3.4; macro F1 0.376 → 0.526; macro AUC 0.915 → 0.938. Holm-significant per
 protocol: Sinus NC 0 → 14/17, Temporal Bones C+ 1 → 12/17, L Spine C+ 0 → 10/17.
+
+**Ambiguous studies kept in training (2026-11-09).** `INCLUDE_AMBIG_TRAIN=1`: 238 ambiguous
+training studies added back (the other 50 are Neck NC, still removed); 7,743 real
+training studies. Same 984-study test set, same global-F2.5 rule. Two synthetic doses:
+the fixed-total rule now allows 144 per augmented protocol (limited by L Spine C+; 1,052
+synthetic rows), and 103 for comparison (656 rows; T Spine NC and Facial Bones C+ get 0
+and 7 because their real counts already exceed or approach 103).
+
+| Setup | Factors (base / GPT) | Rare: base → GPT (of 168) | Common: base → GPT (of 1,024) | Common diff (95% CI), P | Exact match base → GPT | Macro F1 base → GPT |
+|---|---|---|---|---|---|---|
+| Ambiguous removed from training, 103 (current) | 0.38 / 0.40 | 39 → 93 | 894 → 884 | −1.0 (−2.1 to 0.1), .12 | 28.4% → 31.9% | 0.376 → 0.526 |
+| Ambiguous in training, 144 | 0.38 / 0.46 | 43 → 95 | 887 → 869 | −1.8 (−2.9 to −0.6), .006 | 30.3% → 34.0% | 0.377 → 0.525 |
+| Ambiguous in training, 103 | 0.38 / 0.43 | 43 → 85 | 887 → 880 | −0.7 (−1.8 to 0.3), .28 | 30.3% → 33.2% | 0.377 → 0.512 |
+
+Training on ambiguous studies helps baseline slightly (rare 39 → 43, exact match +1.9) but
+not the augmented model's rare-protocol gain. At 144, the augmented model loses
+significantly on common protocols (Head and Neck Angiogram 29 → 22, Head C+ 55 → 51).
