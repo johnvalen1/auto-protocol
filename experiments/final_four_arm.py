@@ -10,6 +10,8 @@ Data
   - Label fix: "Head Angiogram or COW" merged into "Head angiogram or COW".
   - Neck NC removed (67 of its 69 real studies are ambiguous; 2 remain, none in test).
     All rows carrying Neck NC, real and synthetic, are dropped.
+  - INCLUDE_AMBIG_TRAIN=1 keeps ambiguous studies in training (default: removed).
+    TARGET=<n> overrides the fixed training total.
   - Synthetic dose: every augmented protocol is brought to the same total of real
     training + synthetic cases, TARGET = the largest total all of them can reach
     from the V7 synthetic rows (T Spine NC limits it). Synthetic rows are subsampled
@@ -59,20 +61,22 @@ summary.update(neck_nc_real_nonambiguous=int((neck_nc & ~df.synthetic & ~df.ambi
                neck_nc_real_ambiguous=int((neck_nc & df.ambiguous).sum()), neck_nc_synthetic=int((neck_nc & df.synthetic).sum()))
 df = df[~neck_nc].reset_index(drop=True)
 
-train_real = df[(df[SPLIT] == "train") & ~df.synthetic & ~df.ambiguous].reset_index(drop=True)
+AMB_TRAIN = os.environ.get("INCLUDE_AMBIG_TRAIN", "0") == "1"   # 1 = keep ambiguous studies in training
+train_real = df[(df[SPLIT] == "train") & ~df.synthetic & (AMB_TRAIN | ~df.ambiguous)].reset_index(drop=True)
 test_all = df[(df[SPLIT] == "test") & ~df.synthetic].reset_index(drop=True)          # primary + ambiguous
 syn_pool = df[df.synthetic & (df[SPLIT] == "train")].reset_index(drop=True)
 
 real_n = {p: int(train_real[LABEL].map(lambda l: p in l).sum()) for p in AUG}
 syn_n = {p: int(syn_pool[LABEL].map(lambda l: p in l).sum()) for p in AUG}
 TARGET = min(real_n[p] + syn_n[p] for p in AUG)
+if os.environ.get("TARGET"): TARGET = int(os.environ["TARGET"])  # override the fixed training total
 rng = np.random.default_rng(42); keep = []
 for p in AUG:
     rows = np.where(syn_pool[LABEL].map(lambda l: l == [p]))[0]
     need = TARGET - real_n[p]; assert 0 <= need <= len(rows), p
     keep += list(rng.choice(rows, need, replace=False))
 syn_used = syn_pool.iloc[sorted(keep)].reset_index(drop=True)
-summary.update(target_total=TARGET, limiting=min(AUG, key=lambda p: real_n[p] + syn_n[p]),
+summary.update(ambiguous_in_training=AMB_TRAIN, target_total=TARGET, limiting=min(AUG, key=lambda p: real_n[p] + syn_n[p]),
                real_train_per_aug=real_n, synthetic_available=syn_n,
                synthetic_used={p: TARGET - real_n[p] for p in AUG}, synthetic_used_total=len(syn_used),
                train_real=len(train_real), test_primary=int((~test_all.ambiguous).sum()),
