@@ -495,6 +495,16 @@ True protocols per real training case: 1.18. F2 reaches ~1.85 suggestions per ca
 a rare-protocol gain similar to uniform scaling and higher precision. Not yet run on
 the test set; the authors choose the metric first.
 
+**Authors chose F2.5 (2026-11-09), then the test set was run once (`report_f25.py`).**
+Same trained models, thresholds re-tuned for F2.5. Test set with ambiguous studies
+included (984): suggestions per case 2.11 (baseline) / 2.15 (GPT-4o). Rare sensitivity
+36/168 → 75/168 (+23.2 points, 95% CI 16.5 to 30.1, P < .001); common 911/1,024 →
+911/1,024 (0.0, −0.9 to 0.9, P = 1.0); precision +1.0 (P = .013); exact match −0.5
+(P = .49); all reference suggested +4.0 (P < .001); macro F1 0.377 → 0.495; macro AUC
+0.915 → 0.938. Per protocol: Sinus NC 0 → 11/17 (Holm P = .020); Temporal Bones C+
+1 → 9/17 (Holm P = .15). The rare-protocol gain is smaller than with uniform threshold
+scaling on the same test set (+31.6); F2.5 was fixed before the test run and is kept.
+
 - [ ] Radiologist verification of synthetic rows: number reviewed, number accepted /
       edited / rejected, reviewer, criteria.
 - [ ] GPT-4o prompt(s), generation date, temperature/settings, and how the per-protocol
