@@ -523,3 +523,10 @@ suggestions (training-data CV, thresholds from other folds) selects: micro F2.5 
 Side-by-side test comparison of uniform lowering (0.39/0.37) and per-protocol F2.5 on the
 984-study test set: GPT-4o rare-protocol gain +31.5 vs +23.2 points; macro F1 gain
 +0.146 vs +0.117; common-protocol sensitivity unchanged under both.
+
+**Global-F2.5 rule run on the 984-study test set (2026-11-09, `report_global_f25.py`).**
+Factors chosen on CV: baseline 0.38, GPT-4o 0.40 (2.09 / 2.03 suggestions per case).
+Rare sensitivity 39/168 → 93/168 (+32.1 points, 95% CI 24.7 to 40.1, P < .001); common
+894/1,024 → 884/1,024 (−1.0, −2.1 to 0.1, P = .12); exact match +3.6 (P < .001);
+precision +3.4; macro F1 0.376 → 0.526; macro AUC 0.915 → 0.938. Holm-significant per
+protocol: Sinus NC 0 → 14/17, Temporal Bones C+ 1 → 12/17, L Spine C+ 0 → 10/17.
