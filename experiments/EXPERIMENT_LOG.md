@@ -514,3 +514,12 @@ scaling on the same test set (+31.6); F2.5 was fixed before the test run and is 
 - [ ] Planned, not yet run: dose-response (50/100/150 synthetic per protocol, by
       subsampling); multiple seeds; GPT-4o zero-shot protocoling comparator (needs
       API access outside this workspace); regeneration with local exemplars.
+
+**Uniform lowering from an objective (CV-only, 2026-11-09):** keeping per-protocol F1
+thresholds and choosing one lowering factor per model to maximise micro F-beta over all
+suggestions (training-data CV, thresholds from other folds) selects: micro F2.5 → 0.38
+(baseline, 2.03 per case) and 0.40 (GPT-4o, 1.95 per case); micro F2 → 0.61 / 0.63
+(~1.65 per case); micro F1 → 1.0. Test results for the 0.38/0.40 factors not run.
+Side-by-side test comparison of uniform lowering (0.39/0.37) and per-protocol F2.5 on the
+984-study test set: GPT-4o rare-protocol gain +31.5 vs +23.2 points; macro F1 gain
++0.146 vs +0.117; common-protocol sensitivity unchanged under both.
