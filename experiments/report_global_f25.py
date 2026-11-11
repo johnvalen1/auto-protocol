@@ -1,8 +1,11 @@
 """Final operating rule: per-protocol thresholds maximise F1 (averaged over 20 CV folds),
 then ONE lowering factor per model maximises micro F2.5 over all suggestions in
 training-data CV (each fold's thresholds from the other folds). Baseline vs GPT-4o.
-Test set: 984 studies (V7 test set, ambiguous indications included, Neck NC removed);
-EXCLUDE_AMBIG_TEST=1 evaluates on the 956 studies without ambiguous indications.
+Test set (final, BALANCE_TEST=17): 986 studies, 28 with ambiguous indications, all
+included (V7 test set, Neck NC removed, then 17 test studies per augmented protocol).
+This is the one test set; do not set EXCLUDE_AMBIG_TEST for the final analysis.
+(Without BALANCE_TEST the V7 test set is 984 studies.)
+EXCLUDE_AMBIG_TEST=1 (legacy, not used) drops the ambiguous studies: 958 of 986.
 usage: python report_global_f25.py <final_out_dir>"""
 import sys, json
 import numpy as np, pandas as pd
@@ -62,7 +65,7 @@ print("factors chosen on CV (micro F2.5):", FACTOR)
 import os
 KEEP = ~Z["baseline"]["ambiguous"] if os.environ.get("EXCLUDE_AMBIG_TEST") == "1" else np.ones(len(Z["baseline"]["ambiguous"]), bool)
 TAG = "_ambiguous_excluded" if os.environ.get("EXCLUDE_AMBIG_TEST") == "1" else ""
-Y = Z["baseline"]["Y_te"][KEEP]  # 984 test studies, or 956 with EXCLUDE_AMBIG_TEST=1
+Y = Z["baseline"]["Y_te"][KEEP]  # 986 test studies (final); 958 with legacy EXCLUDE_AMBIG_TEST=1
 P = {a: apply(Z[a]["test_prob"], TH[a])[KEEP] for a in Z}; PR = {a: Z[a]["test_prob"][KEEP] for a in Z}
 print("test studies:", len(Y))
 t3 = lambda pr: np.array([len(set(np.argsort(q)[-3:]) & set(np.where(t)[0])) > 0 for q, t in zip(pr, Y)])
