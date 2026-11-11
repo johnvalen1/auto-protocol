@@ -1,0 +1,61 @@
+indication_x1,protocol_y
+"Neck pain and fever x 3 days, concern for infection.",C Spine C+
+"Worsening neck pain, IV drug user, febrile. R/o epidural abscess.",C Spine C+
+"Neck swelling and pain with difficulty swallowing, ?deep neck infection.",C Spine C+
+"Persistent fever with positive blood cultures and severe neck pain.",C Spine C+
+"Recent cervical surgery, now with increased pain and redness around incision.",C Spine C+
+"Fever, chills and worsening neck stiffness over the past week.",C Spine C+
+"Recent dental infection, now with worsening neck pain and swelling.",C Spine C+
+"Neck pain and fever following recent central line placement.",C Spine C+
+"Tender swelling over posterior neck, ?underlying abscess.",C Spine C+
+"Known discitis, worsening pain despite antibiotics. Assess for progression.",C Spine C+
+"Neck pain and swelling following penetrating injury, ?developing collection.",C Spine C+
+"Elevated WBC and CRP with focal cervical spine tenderness, r/o osteomyelitis.",C Spine C+
+"Lymphoma patient with new worsening neck pain and fever.",C Spine C+
+"Neck stiffness and difficulty swallowing after recent URI, ?retropharyngeal abscess.",C Spine C+
+"Severe right-sided neck pain with fever, ?infected facet joint.",C Spine C+
+"Recent cervical injection, now worsening pain and fever. R/o postprocedural infection.",C Spine C+
+"Increasing neck swelling and pain, concern for deep space infection.",C Spine C+
+"Fever and neck stiffness, ?cervical epidural abscess.",C Spine C+
+"Known cervical osteomyelitis, persistent bacteremia despite treatment. Assess for abscess.",C Spine C+
+"Diabetic patient with worsening neck pain and fever, ?cervical spine infection.",C Spine C+
+"Lower back pain and fever x 3 days, concern for infection.",L Spine C+
+"Worsening low back pain, IV drug user, febrile. R/o epidural abscess.",L Spine C+
+"Severe lumbar pain with elevated WBC and CRP, ?discitis/osteomyelitis.",L Spine C+
+"Persistent fever with positive blood cultures and focal lumbar tenderness.",L Spine C+
+"Recent lumbar surgery, now with worsening pain and drainage from incision.",L Spine C+
+"Fever and worsening back pain following recent epidural injection.",L Spine C+
+"Known discitis, worsening pain despite antibiotics. Assess for progression.",L Spine C+
+"Low back pain with bilateral leg weakness and fever, ?epidural abscess.",L Spine C+
+"Tenderness over lumbar spine with bacteremia, r/o osteomyelitis.",L Spine C+
+"Recent spinal procedure, now with increasing back pain and fever.",L Spine C+
+"IV drug use with severe lower back pain radiating into both legs, ?spinal infection.",L Spine C+
+"Elevated inflammatory markers with persistent lumbar pain, assess for paraspinal collection.",L Spine C+
+"Recent lumbar fusion, now with fever and increasing pain. R/o hardware-associated infection.",L Spine C+
+"Immunocompromised patient with new low back pain and fever, ?discitis.",L Spine C+
+"Known lumbar osteomyelitis with persistent bacteremia despite treatment, assess for abscess.",L Spine C+
+"Worsening back pain with focal lumbar swelling and overlying redness, ?soft tissue infection.",L Spine C+
+"Low back pain and chills following recent urinary infection, concern for spinal infection.",L Spine C+
+"Severe lumbar pain with new radicular symptoms and fever, ?epidural phlegmon.",L Spine C+
+"Diabetic patient with worsening back pain and elevated CRP, r/o discitis/osteomyelitis.",L Spine C+
+"Persistent fever of unknown origin with focal lumbar tenderness, assess for infectious process.",L Spine C+
+"Persistent sinus congestion and facial pain x 2 weeks, not improving with antibiotics.",Sinus NC
+"Severe right-sided facial pain and pressure, ?acute sinusitis.",Sinus NC
+"Recurrent sinus infections, assess for chronic sinus disease.",Sinus NC
+"Nasal obstruction and difficulty breathing through the nose, assess sinus anatomy.",Sinus NC
+"Persistent headaches with frontal sinus tenderness and congestion.",Sinus NC
+"Chronic sinusitis with worsening symptoms despite medical treatment.",Sinus NC
+"Recurrent episodes of sinusitis, assess for underlying disease.",Sinus NC
+"Facial pain and purulent nasal discharge, ?acute sinusitis.",Sinus NC
+"Suspected nasal polyps with longstanding nasal obstruction.",Sinus NC
+"Persistent left-sided nasal congestion and cheek pressure, assess for sinus disease.",Sinus NC
+"Preoperative planning for FESS, assess extent of sinus disease.",Sinus NC
+"History of multiple sinus surgeries, now with recurrent congestion and facial pain.",Sinus NC
+"Loss of smell with chronic nasal congestion, ?chronic rhinosinusitis.",Sinus NC
+"Periorbital pressure and sinus tenderness with recent worsening congestion.",Sinus NC
+"Chronic postnasal drip and recurrent sinus infections, assess for mucosal thickening.",Sinus NC
+"Nasal obstruction following remote trauma, assess for septal deviation and sinus anatomy.",Sinus NC
+"Persistent frontal headache with tenderness over frontal sinuses, ?frontal sinusitis.",Sinus NC
+"Recurrent unilateral maxillary sinus pain and pressure, assess for obstruction.",Sinus NC
+"Known chronic pansinusitis, reassess disease burden prior to ENT follow-up.",Sinus NC
+"Nasal congestion and facial pressure for several months, failed multiple courses of antibiotics.",Sinus NC

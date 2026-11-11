@@ -61,6 +61,40 @@ summary.update(neck_nc_real_nonambiguous=int((neck_nc & ~df.synthetic & ~df.ambi
                neck_nc_real_ambiguous=int((neck_nc & df.ambiguous).sum()), neck_nc_synthetic=int((neck_nc & df.synthetic).sum()))
 df = df[~neck_nc].reset_index(drop=True)
 
+# ---- optional: larger synthetic pool (V7 + V8 synthetic rows + extra CSV), duplicates dropped ----
+norm = lambda s: " ".join(str(s).lower().split())
+if os.environ.get("USE_V8_SYN") == "1" or os.environ.get("EXTRA_SYN"):
+    extra = []
+    if os.environ.get("USE_V8_SYN") == "1":
+        e = v8[v8.original_or_augmented == "augmented"][[TEXT, LABEL]].copy(); e["src"] = "V8"; extra.append(e)
+    if os.environ.get("EXTRA_SYN"):
+        e = pd.read_csv(os.environ["EXTRA_SYN"])[[TEXT, LABEL]]; e["src"] = "extra"; extra.append(e)
+    extra = pd.concat(extra, ignore_index=True)
+    extra[LABEL] = extra[LABEL].apply(lambda x: sorted({FIX.get(t.strip(), t.strip()) for t in str(x).split(",")}))
+    extra = extra[extra[LABEL].map(lambda l: len(l) == 1 and l[0] in AUG)]
+    seen = set(df[df.synthetic][TEXT].map(norm)); add = []
+    for _, r in extra.iterrows():
+        k = norm(r[TEXT])
+        if k not in seen: seen.add(k); add.append(r)
+    add = pd.DataFrame(add)
+    add = add.assign(synthetic=True, ambiguous=False, **{SPLIT: "train", "Identifier": [f"syn-{s}-{i}" for i, s in enumerate(add.src)]})
+    summary.update(extra_synthetic_added={k: int(v) for k, v in add.src.value_counts().items()})
+    df = pd.concat([df, add.drop(columns="src")], ignore_index=True)
+
+# ---- optional: rebalance the test set to exactly BALANCE_TEST studies per augmented protocol ----
+# Only single-protocol studies are moved (random, seed 42), so no other protocol's counts change.
+if os.environ.get("BALANCE_TEST"):
+    k = int(os.environ["BALANCE_TEST"]); rng_b = np.random.default_rng(42); moves = {}
+    for p in AUG:
+        real = ~df.synthetic; single = df[LABEL].map(lambda l: l == [p]); has = df[LABEL].map(lambda l: p in l)
+        n_test = int((real & has & (df[SPLIT] == "test")).sum())
+        if n_test > k:
+            idx = rng_b.choice(np.where(real & single & (df[SPLIT] == "test"))[0], n_test - k, replace=False); df.loc[idx, SPLIT] = "train"
+        elif n_test < k:
+            idx = rng_b.choice(np.where(real & single & (df[SPLIT] == "train"))[0], k - n_test, replace=False); df.loc[idx, SPLIT] = "test"
+        if n_test != k: moves[p] = {"from": n_test, "to": k, "identifiers": [str(x) for x in df.loc[idx, "Identifier"]]}
+    summary.update(test_rebalancing=moves)
+
 AMB_TRAIN = os.environ.get("INCLUDE_AMBIG_TRAIN", "0") == "1"   # 1 = keep ambiguous studies in training
 train_real = df[(df[SPLIT] == "train") & ~df.synthetic & (AMB_TRAIN | ~df.ambiguous)].reset_index(drop=True)
 test_all = df[(df[SPLIT] == "test") & ~df.synthetic].reset_index(drop=True)          # primary + ambiguous
@@ -69,7 +103,12 @@ syn_pool = df[df.synthetic & (df[SPLIT] == "train")].reset_index(drop=True)
 real_n = {p: int(train_real[LABEL].map(lambda l: p in l).sum()) for p in AUG}
 syn_n = {p: int(syn_pool[LABEL].map(lambda l: p in l).sum()) for p in AUG}
 TARGET = min(real_n[p] + syn_n[p] for p in AUG)
+# never exceed (least frequent non-augmented protocol's real training count) - 1, to keep the frequency order
+nonaug_min = min(int(train_real[LABEL].map(lambda l: q in l).sum()) for q in {l for ls in train_real[LABEL] for l in ls} - set(AUG))
+CAP = nonaug_min - 1
+if os.environ.get("CAP_BELOW_COMMON") == "1": TARGET = min(TARGET, CAP)
 if os.environ.get("TARGET"): TARGET = int(os.environ["TARGET"])  # override the fixed training total
+summary.update(cap_below_common=CAP)
 rng = np.random.default_rng(42); keep = []
 for p in AUG:
     rows = np.where(syn_pool[LABEL].map(lambda l: l == [p]))[0]
