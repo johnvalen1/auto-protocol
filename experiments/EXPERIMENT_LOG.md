@@ -554,3 +554,38 @@ significantly on common protocols (Head and Neck Angiogram 29 → 22, Head C+ 55
 95% CI 23.5 to 39.1, P < .001); common 880/1,000 → 870/1,000 (−1.0, −2.2 to 0.0, P = .12);
 exact match 29.2% → 32.8% (P < .001); precision 46.3% → 49.5%; macro F1 0.381 → 0.520;
 macro AUC 0.922 → 0.946. Holm-significant: Sinus NC 0 → 14/17, Temporal Bones C+ 1 → 12/17.
+
+## Final setup v2: 17 test cases per augmented protocol, synthetic top-up to 156 (2026-11-10)
+
+Changes from the 103 version (decided by the authors on 2026-11-10):
+- Every augmented protocol has exactly 17 test studies (`BALANCE_TEST=17`). Only single-protocol
+  real studies are moved, at random (seed 42), so no other protocol changes: T Spine NC 18 → 17
+  (Identifier 8799 test → train); Neck Angiogram 14 → 17 (38227, 34657, 37840 train → test).
+  Split: 7,741 training (7,503 after removing 238 ambiguous), 986 test (28 ambiguous; 958 without).
+- Synthetic pool = V7 synthetic rows + V8 synthetic rows (`USE_V8_SYN=1`, 188 new after duplicate
+  removal) + 60 new author-written indications in `data/extra_synthetic_2026-11-10.csv`
+  (`EXTRA_SYN`; 59 added, one exact duplicate listed under both C Spine C+ and L Spine C+ dropped).
+  Only single-label rows of augmented protocols; texts compared lower-case, whitespace-collapsed.
+- Dose: every augmented protocol topped up to 156 (real + synthetic) = least frequent common
+  protocol's real training count (Head Venogram, 157) minus 1 (`CAP_BELOW_COMMON=1`); Facial Bones
+  C+ (95 real + all 61 synthetic) also limits it at 156. 1,233 synthetic rows.
+- Head C+ (68 test) has more test studies than C Spine NC (63) because the earlier rare-protocol
+  enrichment pulled in multi-protocol studies: 16 of Head C+'s V7 test studies carry a rare
+  protocol, against 8 for C Spine NC. Common protocols were not reordered.
+
+Command: `USE_V8_SYN=1 EXTRA_SYN=data/extra_synthetic_2026-11-10.csv BALANCE_TEST=17 CAP_BELOW_COMMON=1
+python final_four_arm.py V7.xlsx V8.xlsx {baseline,gpt4o} out/` then `report_global_f25.py out/`.
+
+Results, 986-study test set (ambiguous included). Factors on CV: baseline 0.37, GPT-4o 0.41;
+2.11 / 2.01 suggestions per case.
+- Rare sensitivity 38/170 → 97/170 (+34.7 points, 95% CI 27.2 to 42.1, P < .001; 61 gained, 2 lost).
+- Common sensitivity 900/1,024 → 882/1,024 (−1.8, −3.1 to −0.6, P = .010; 13 gained, 31 lost).
+- Overall sensitivity 78.6% → 82.0% (P < .001); all reference suggested 76.9% → 80.5%; exact match
+  27.8% → 32.8%; top-3 86.8% → 91.3%; precision 45.1% → 49.3%; micro F1 0.573 → 0.616; macro F1
+  0.371 → 0.524; weighted F1 0.583 → 0.637; macro AUC 0.915 → 0.937; Hamming 0.071 → 0.062.
+- Holm-significant: Sinus NC 0 → 14/17 (.002), Temporal Bones C+ 1 → 12/17 (.019), L Spine C+
+  0 → 10/17 (.035). Largest common loss Head C+ 56 → 49/68 (raw P .039, Holm .63).
+Secondary 958-study set: rare 37/154 → 89/154 (+33.8); common 886/1,000 → 870/1,000 (−1.6, P = .020).
+
+Compared with the 103 version, the rare gain is larger (+34.7 vs +32.1 points) but the common-protocol
+loss is now statistically significant (P = .010 vs .12), as with the 144 dose earlier.
