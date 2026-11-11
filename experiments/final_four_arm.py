@@ -120,6 +120,9 @@ summary.update(ambiguous_in_training=AMB_TRAIN, target_total=TARGET, limiting=mi
                synthetic_used={p: max(0, TARGET - real_n[p]) for p in AUG}, synthetic_used_total=len(syn_used),
                train_real=len(train_real), test_primary=int((~test_all.ambiguous).sum()),
                test_ambiguous=int(test_all.ambiguous.sum()))
+os.makedirs(OUT, exist_ok=True)
+syn_used.assign(**{LABEL: syn_used[LABEL].map(", ".join)})[["Identifier", TEXT, LABEL]].to_csv(f"{OUT}/synthetic_used.csv", index=False)
+if os.environ.get("PREP_ONLY") == "1": json.dump(summary, open(f"{OUT}/data_summary.json", "w"), indent=1); sys.exit(0)
 
 train = pd.concat([train_real, syn_used], ignore_index=True) if ARM in ("gpt4o", "gpt4o_cw") else train_real
 mlb = MultiLabelBinarizer(); mlb.fit(train_real[LABEL])

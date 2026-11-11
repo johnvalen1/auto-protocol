@@ -589,3 +589,7 @@ Secondary 958-study set: rare 37/154 → 89/154 (+33.8); common 886/1,000 → 87
 
 Compared with the 103 version, the rare gain is larger (+34.7 vs +32.1 points) but the common-protocol
 loss is now statistically significant (P = .010 vs .12), as with the 144 dose earlier.
+
+The exact 1,233 synthetic rows used in final setup v2 are saved as `data/synthetic_used_156.csv`
+(1,018 from V7, 159 from V8, 56 from the author CSV; source shown in Identifier). `final_four_arm.py`
+now writes `<out>/synthetic_used.csv` on every run; `PREP_ONLY=1` stops after data prep.

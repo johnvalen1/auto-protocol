@@ -4,6 +4,7 @@ DATA (project files; nothing to upload)
 - CT_Neuro_Gold_Standard_V7_with_augments_lower_classes.xlsx, sheet "data": all studies, the train/test split (column "split"), and GPT-4o synthetic indications (original_or_augmented = "augmented").
 - CT_Neuro_Gold_Standard_V8_baseline.xlsx, sheet "data": (a) column exclude_record_based_on_anatomical_ambiguity (1 = ambiguous), matched to V7 on Identifier; (b) its extra synthetic rows (original_or_augmented = "augmented").
 - Repo file experiments/data/extra_synthetic_2026-11-10.csv: 60 author-written synthetic indications (20 each for C Spine C+, L Spine C+, Sinus NC).
+- Repo file experiments/data/synthetic_used_156.csv: THE EXACT 1,233 SYNTHETIC ROWS THE GPT-4o MODEL WAS TRAINED ON (columns Identifier, indication_x1, protocol_y). Source is in Identifier: a V7 Identifier = V7 synthetic row (1,018); "syn-V8-..." = from V8 (159); "syn-extra-..." = from the author CSV (56). final_four_arm.py re-creates this set (seed 42) and writes it to <out_dir>/synthetic_used.csv on every run; check it matches this file row for row. PREP_ONLY=1 stops after data prep (writes only synthetic_used.csv and data_summary.json).
 
 CODE: GitHub johnvalen1/auto-protocol, branch experiment/real-only-threshold-tuning (not master), folder experiments/.
 - Training (about 3-4 min per arm), run for arms "baseline" and "gpt4o" only:
